@@ -1,136 +1,543 @@
-// DevTools 面板：向被检查页面注入 WebSocket 钩子，按 WS 连接分组展示与导出
-// chrome.devtools.network 没有 WebSocket 帧事件（只有 getHAR / onNavigated / onRequestFinished），
-// 因此帧必须从页面侧采集，不能用 network API 直接拿。
-let lastSeq = 0;
+// DevTools 面板：左侧连接索引 + 右侧帧表（主从布局）。
+// chrome.devtools.network 没有 WebSocket 帧事件，帧从页面侧钩子读取。
 let currentPage = null;
-let hookSource = null;
-const connViews = new Map();
-const logEl = document.getElementById("log");
+let lastSeq = 0;
+let rightLastSeq = 0;
+let selectedId = null;
+let data = { frames: [], connections: [] };
+const framesByConn = new Map();
+const connMeta = new Map();
+const pendingRows = new Map(); // seq -> 二进制帧的 DOM 引用
+let renderedSeqList = [];
+
+const ui = { q: "", host: "", st: "all", onlyFrames: false, dir: "all", payloadQ: "", loaded: 20, follow: true };
+
+const $ = (s) => document.querySelector(s);
 
 function evalInPage(expression, callback) {
   chrome.devtools.inspectedWindow.eval(expression, { useContentScriptContext: false }, (result, isException) => {
-    callback(result, isException);
+    if (callback) callback(result, isException);
   });
 }
 
+// 静态注入：页面通过 web_accessible_resources 加载打包好的钩子文件，注入即执行。
+// inspectedWindow.eval 只做“创建 script 标签”这一最小桥接，不再把源码字符串喂给 eval。
 function inject(cb) {
-  if (!hookSource) return;
-  evalInPage(hookSource, () => {
-    if (cb) cb();
+  const url = chrome.runtime.getURL("ws-hook-source.js");
+  evalInPage(
+    "(function(){ if (window.__WS_VERSION__ === 3) return; var s = document.createElement('script');" +
+    "s.src = " + JSON.stringify(url) + "; (document.head || document.documentElement).appendChild(s); })()",
+    () => { if (cb) cb(); }
+  );
+}
+
+// 降级路径：站点未授权时 chrome.scripting 无法注册内容脚本，改为面板打开期间静态注入 mock 脚本。
+// 同样只创建 <script> 标签，不把源码字符串交给 eval。
+function injectMock(cb) {
+  const rmUrl = chrome.runtime.getURL("rules-model.js");
+  const mockUrl = chrome.runtime.getURL("mock-inject.js");
+  evalInPage(
+    "(function(){ if (window.__MOCK_VERSION__ === 4) return;" +
+    " var rm = document.createElement('script'); rm.src = " + JSON.stringify(rmUrl) + ";" +
+    " rm.onload = function(){ var mi = document.createElement('script'); mi.src = " + JSON.stringify(mockUrl) +
+    "; (document.head || document.documentElement).appendChild(mi); };" +
+    " (document.head || document.documentElement).appendChild(rm); })()",
+    () => { if (cb) cb(); }
+  );
+}
+
+function pushMockConfig() {
+  chrome.storage.local.get("proxyRules", (res) => {
+    const table = RuleModel.buildMockTable(res.proxyRules || []);
+    const cfg = JSON.stringify({ source: "api-proxy-mock", table, enabled: table.length > 0 });
+    evalInPage(
+      "window.__MOCK_CONFIG__ = " + cfg + ";" +
+      "window.postMessage({ __mockSource: 'api-proxy-mock', type: 'config', table: window.__MOCK_CONFIG__.table," +
+      " enabled: window.__MOCK_CONFIG__.enabled }, '*');"
+    );
   });
 }
 
-// 注入前先读入钩子源码，保证只有一份实现
-fetch("ws-hook-source.js")
-  .then((r) => r.text())
-  .then((text) => {
-    hookSource = text;
-    inject();
-  })
-  .catch(() => {});
+function injectAll() {
+  inject();
+  injectMock(() => pushMockConfig());
+}
+
+chrome.storage.onChanged.addListener((changes, area) => {
+  if (area === "local" && changes.proxyRules) pushMockConfig();
+});
 
 function readBuffer(callback) {
   evalInPage(
     "JSON.stringify({page: location.href, frames: window.__WS_FRAMES__ || [], connections: window.__WS_CONNECTIONS__ || []})",
     (result, isException) => {
       if (isException) return;
-      let data = null;
-      try { data = JSON.parse(result); } catch (e) { return; }
-      callback(data);
+      let parsed = null;
+      try { parsed = JSON.parse(result); } catch (e) { return; }
+      callback(parsed);
     }
   );
 }
 
-function resetView() {
-  logEl.innerHTML = "";
-  connViews.clear();
-  lastSeq = 0;
+function sizeText(bytes) {
+  if (!bytes) return "0B";
+  if (bytes < 1024) return bytes + "B";
+  const kb = bytes / 1024;
+  return kb >= 1024 ? (kb / 1024).toFixed(1) + "MB" : kb.toFixed(1) + "KB";
 }
 
-function connView(frame, connections) {
-  const id = frame.connId || "unknown";
-  let view = connViews.get(id);
-  if (view) return view;
-
-  const meta = connections.find((c) => c.id === id);
-
-  const details = document.createElement("details");
-  details.open = true;
-  details.className = "conn";
-
-  const summary = document.createElement("summary");
-  const title = document.createElement("span");
-  title.textContent = `${id} · ${frame.url || (meta && meta.url) || ""}`;
-  const count = document.createElement("span");
-  count.textContent = " · 0 帧";
-  summary.appendChild(title);
-  summary.appendChild(count);
-  details.appendChild(summary);
-
-  const body = document.createElement("div");
-  body.className = "frames";
-  details.appendChild(body);
-
-  logEl.appendChild(details);
-  view = { details, body, count, frames: 0 };
-  connViews.set(id, view);
-  return view;
+function timeText(ms, withMs) {
+  const d = new Date(ms);
+  const base = d.toLocaleTimeString("zh-CN", { hour12: false });
+  return withMs ? base + "." + String(d.getMilliseconds()).padStart(3, "0") : base;
 }
 
-function renderFrame(frame, connections) {
-  const view = connView(frame, connections);
-  const div = document.createElement("div");
-  div.className = "item";
-  div.textContent = `[${new Date(frame.ts).toLocaleTimeString()}] [${frame.direction}] ${frame.payload}`;
-  view.body.appendChild(div);
-  view.frames += 1;
-  view.count.textContent = " · " + view.frames + " 帧";
-  logEl.scrollTop = logEl.scrollHeight;
+function escapeHtml(s) {
+  return String(s == null ? "" : s)
+    .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 }
 
-function pull() {
-  readBuffer((data) => {
-    const frames = data.frames || [];
-    const connections = data.connections || [];
-    const maxSeq = frames.length ? frames[frames.length - 1].seq : 0;
+function hostOf(url) {
+  const m = /^[a-z]+:\/\/([^/]+)/i.exec(url || "");
+  return m ? m[1] : "";
+}
 
-    // 页面切换、清空、或缓冲被重置（seq 回退）时重建视图，避免跨页面/跨连接串数据
-    if (data.page !== currentPage || maxSeq < lastSeq || (frames.length === 0 && lastSeq !== 0)) {
-      currentPage = data.page;
-      resetView();
-    }
+function urlShort(url) {
+  return String(url || "").replace(/^(wss?|http)\:\/\//, "");
+}
 
-    // 钩子被页面覆盖或尚未注入时重试一次
-    if (frames.length === 0 && !window.__hookRetry) {
-      window.__hookRetry = true;
-      inject(() => { window.__hookRetry = false; });
-      return;
-    }
+function connFrames(id) {
+  return framesByConn.get(id) || [];
+}
 
-    // 按单调帧序号做增量渲染：帧总量超过 2000 被裁剪后索引会前移，不能用数组下标
-    frames.forEach((frame) => {
-      if (frame.seq > lastSeq) renderFrame(frame, connections);
+// ---------- 左侧连接索引 ----------
+
+function filteredConns() {
+  const q = ui.q.trim().toLowerCase();
+  const list = Array.from(connMeta.values()).filter((c) => {
+    if (ui.onlyFrames && !connFrames(c.id).length) return false;
+    if (ui.host && hostOf(c.url) !== ui.host) return false;
+    if (ui.st === "open" && c.closedAt) return false;
+    if (ui.st === "closed" && !c.closedAt) return false;
+    if (q && !(c.id + " " + (c.url || "")).toLowerCase().includes(q)) return false;
+    return true;
+  });
+  // 新连接在前，便于最近建立的连接被看到
+  return list.sort((a, b) => (b.openedAt || 0) - (a.openedAt || 0));
+}
+
+function renderConnList() {
+  document.getElementById("connTotal").textContent = String(connMeta.size);
+  const listEl = document.getElementById("connList");
+  const prevScroll = listEl.scrollTop;
+  const rows = filteredConns();
+  const shown = rows.slice(0, ui.loaded);
+
+  listEl.innerHTML = "";
+  shown.forEach((c) => {
+    const frames = connFrames(c.id);
+    const el = document.createElement("div");
+    el.className = "conn-item" + (c.id === selectedId ? " active" : "");
+    el.dataset.id = c.id;
+    el.innerHTML =
+      '<div class="conn-line1">' +
+        '<span class="dot ' + (c.closedAt ? "" : "ok") + '"></span>' +
+        '<span class="conn-id">' + escapeHtml(c.id) + '</span>' +
+        '<span class="conn-url" title="' + escapeHtml(c.url) + '">' + escapeHtml(urlShort(c.url)) + '</span>' +
+      '</div>' +
+      '<div class="conn-line2">' +
+        '<span>' + (c.openedAt ? timeText(c.openedAt) : "建连中") + '</span>' +
+        '<span>' + frames.length + ' 帧</span>' +
+        (c.truncated ? '<span class="trunc">截断</span>' : "") +
+        '<span class="code">' + (c.closedAt ? ("code " + (c.closeCode == null ? "-" : c.closeCode)) : "进行中") + '</span>' +
+      '</div>';
+    listEl.appendChild(el);
+  });
+
+  document.getElementById("loadInfo").textContent = "已加载 " + shown.length + " / " + rows.length + " 条";
+  document.getElementById("loadMore").disabled = shown.length >= rows.length;
+  listEl.scrollTop = prevScroll;
+}
+
+function renderHostOptions() {
+  const sel = document.getElementById("hostSel");
+  const hosts = Array.from(new Set(Array.from(connMeta.values()).map((c) => hostOf(c.url)).filter(Boolean)));
+  const current = ui.host;
+  sel.innerHTML = '<option value="">全部 host</option>' + hosts.map((h) =>
+    '<option value="' + escapeHtml(h) + '"' + (h === current ? " selected" : "") + ">" + escapeHtml(h) + "</option>").join("");
+}
+
+// ---------- 右侧帧区 ----------
+
+function selectedConn() {
+  return selectedId ? connMeta.get(selectedId) : null;
+}
+
+function dirCounts() {
+  const c = { all: 0, in: 0, out: 0, open: 0, close: 0 };
+  connFrames(selectedId).forEach((f) => {
+    c.all++;
+    if (c[f.direction] != null) c[f.direction]++;
+  });
+  return c;
+}
+
+function renderDirChips() {
+  const c = dirCounts();
+  const items = [["all", "全部"], ["in", "in"], ["out", "out"], ["open", "open"], ["close", "close"]];
+  document.getElementById("dirChips").innerHTML = items.map(([k, label]) =>
+    '<button class="dir-chip' + (ui.dir === k ? " active" : "") + '" data-dir="' + k + '">' + label + " " + c[k] + "</button>").join("");
+}
+
+function renderMainHead() {
+  const c = selectedConn();
+  const head = document.getElementById("mainHead");
+  if (!c) {
+    head.innerHTML = '<div class="l1"><span class="url">左侧选择一个连接</span></div>';
+    return;
+  }
+  const frames = connFrames(c.id);
+  const l2 = [
+    "打开 " + (c.openedAt ? timeText(c.openedAt, true) : "-"),
+    "关闭 " + (c.closedAt ? timeText(c.closedAt, true) : "进行中"),
+    "closeCode " + (c.closeCode == null ? "-" : c.closeCode),
+    frames.length + " 帧",
+    c.truncated ? "已截断" : "未截断"
+  ].join(" · ");
+  head.innerHTML =
+    '<div class="l1"><span class="dot ' + (c.closedAt ? "" : "ok") + '"></span><span class="id">' + escapeHtml(c.id) + '</span>' +
+    '<span class="url" title="' + escapeHtml(c.url) + '">' + escapeHtml(c.url) + "</span></div>" +
+    '<div class="l2">' + escapeHtml(l2) + "</div>";
+}
+
+function frameVisible(f) {
+  if (ui.dir !== "all" && f.direction !== ui.dir) return false;
+  const q = ui.payloadQ.trim().toLowerCase();
+  if (!q) return true;
+  return String(f.payload || "").toLowerCase().includes(q) || String(f.previewBase64 || "").toLowerCase().includes(q);
+}
+
+function payloadText(f) {
+  if (f.kind === "binary") {
+    return f.pending ? "(读取中)" : "bin · " + sizeText(f.byteLength) + (f.truncated ? " · truncated" : "");
+  }
+  return f.payload;
+}
+
+function isWide(f) {
+  return f.kind === "binary" || String(f.payload || "").length > 600;
+}
+
+function renderRow(f) {
+  const row = document.createElement("div");
+  row.className = "frame-row" + (isWide(f) ? " wide" : "");
+  row.dataset.seq = f.seq;
+  const lenText = f.kind === "binary" ? sizeText(f.byteLength) : (f.byteLength ? f.byteLength + "B" : "0B");
+  row.innerHTML =
+    '<span class="time">' + timeText(f.ts, true) + "</span>" +
+    '<span><span class="dir ' + escapeHtml(f.direction) + '">' + escapeHtml(f.direction) + "</span></span>" +
+    '<span class="len' + (String(f.payload || "").length > 600 ? " big" : "") + '">' + escapeHtml(lenText) + "</span>" +
+    '<span class="payload' + (f.kind === "binary" ? " bin" : "") + '" title="' + escapeHtml(payloadText(f)) + '">' + escapeHtml(payloadText(f)) + "</span>" +
+    '<button class="text" data-seq="' + f.seq + '"' + (isWide(f) ? "" : ' style="visibility:hidden"') + ">查看</button>";
+
+  if (f.pending) {
+    pendingRows.set(f.seq, {
+      payload: row.querySelector(".payload"),
+      len: row.querySelector(".len")
     });
-    if (frames.length) lastSeq = maxSeq;
+  }
+  return row;
+}
+
+function frameListEl() { return document.getElementById("frameList"); }
+
+function appendFrame(f) {
+  if (!frameVisible(f)) return;
+  frameListEl().appendChild(renderRow(f));
+}
+
+function rebuildFrames() {
+  const listEl = frameListEl();
+  listEl.innerHTML = "";
+  pendingRows.clear();
+  renderedSeqList = [];
+  if (!selectedId) return;
+  const frames = connFrames(selectedId).filter(frameVisible);
+  frames.forEach((f) => {
+    appendFrame(f);
+    renderedSeqList.push(f.seq);
+  });
+  rightLastSeq = connFrames(selectedId).length ? connFrames(selectedId)[connFrames(selectedId).length - 1].seq : 0;
+  updateEmptyMain();
+  updateFrameFoot();
+  if (ui.follow) listEl.scrollTop = listEl.scrollHeight;
+}
+
+function updateFrameFoot() {
+  const c = selectedConn();
+  const total = connFrames(selectedId).length;
+  const visible = renderedSeqList.length;
+  document.getElementById("frameFoot").textContent = c
+    ? "显示 " + visible + " / " + total + " 帧 · 缓冲上限 2000 帧" + (c.truncated ? " · 该连接已被截断" : "") + (ui.follow ? " · 跟随最新" : " · 已暂停滚动")
+    : "";
+}
+
+function updateEmptyMain() {
+  const empty = document.getElementById("emptyMain");
+  const c = selectedConn();
+  if (!c) {
+    empty.style.display = "flex";
+    document.getElementById("emptyTitle").textContent = "左侧选择一个连接";
+    document.getElementById("emptyDesc").textContent = "页面里建立 WebSocket 后，连接会出现在左侧索引。";
+    return;
+  }
+  const total = connFrames(selectedId).length;
+  const visible = renderedSeqList.length;
+  if (total === 0) {
+    empty.style.display = "flex";
+    document.getElementById("emptyTitle").textContent = "该连接没有帧";
+    document.getElementById("emptyDesc").textContent = "可能在建连阶段就关闭了。";
+  } else if (visible === 0) {
+    empty.style.display = "flex";
+    document.getElementById("emptyTitle").textContent = "当前筛选条件下没有帧";
+    document.getElementById("emptyDesc").textContent = "调整方向或 payload 过滤后再试。";
+  } else {
+    empty.style.display = "none";
+  }
+}
+
+function selectConn(id) {
+  if (selectedId === id) return;
+  selectedId = id;
+  ui.dir = "all";
+  ui.payloadQ = "";
+  document.getElementById("payloadSearch").value = "";
+  renderConnList();
+  renderMainHead();
+  renderDirChips();
+  rebuildFrames();
+}
+
+// ---------- 数据轮询 ----------
+
+function resetAll() {
+  data = { frames: [], connections: [] };
+  framesByConn.clear();
+  connMeta.clear();
+  pendingRows.clear();
+  renderedSeqList = [];
+  selectedId = null;
+  lastSeq = 0;
+  rightLastSeq = 0;
+  renderHostOptions();
+  renderConnList();
+  renderMainHead();
+  renderDirChips();
+  frameListEl().innerHTML = "";
+  updateFrameFoot();
+  updateEmptyMain();
+}
+
+function consume(incoming) {
+  const frames = incoming.frames || [];
+  const connections = incoming.connections || [];
+  const maxSeq = frames.length ? frames[frames.length - 1].seq : 0;
+
+  if (incoming.page !== currentPage || maxSeq < lastSeq || (frames.length === 0 && lastSeq !== 0)) {
+    currentPage = incoming.page;
+    resetAll();
+  }
+
+  let structureChanged = false;
+
+  connections.forEach((c) => {
+    const prev = connMeta.get(c.id);
+    if (!prev) structureChanged = true;
+    connMeta.set(c.id, c);
+    if (!framesByConn.has(c.id)) framesByConn.set(c.id, []);
+  });
+
+  frames.forEach((f) => {
+    if (f.seq <= lastSeq) return;
+    const id = f.connId || "unknown";
+    if (!framesByConn.has(id)) {
+      framesByConn.set(id, []);
+      structureChanged = true;
+    }
+    framesByConn.get(id).push(f);
+  });
+
+  if (frames.length) lastSeq = maxSeq;
+
+  // 连接数/主机变化时刷新索引与 host 下拉
+  if (structureChanged) {
+    renderHostOptions();
+    renderConnList();
+  } else {
+    updateConnCounts();
+  }
+
+  // 未选中时自动选中第一条（有帧优先）
+  if (!selectedId && connMeta.size) {
+    const withFrames = Array.from(connMeta.values()).find((c) => connFrames(c.id).length);
+    selectConn((withFrames || Array.from(connMeta.values())[0]).id);
+  }
+
+  if (selectedId) {
+    const all = connFrames(selectedId);
+    all.forEach((f) => {
+      if (f.seq > rightLastSeq) {
+        appendFrame(f);
+        if (frameVisible(f)) renderedSeqList.push(f.seq);
+      }
+      const row = pendingRows.get(f.seq);
+      if (row && !f.pending) {
+        row.payload.textContent = payloadText(f);
+        row.payload.title = payloadText(f);
+        row.len.textContent = sizeText(f.byteLength);
+        pendingRows.delete(f.seq);
+      }
+    });
+    if (all.length) rightLastSeq = all[all.length - 1].seq;
+    if (ui.follow) frameListEl().scrollTop = frameListEl().scrollHeight;
+    renderMainHead();
+    updateFrameFoot();
+    updateEmptyMain();
+  }
+}
+
+function updateConnCounts() {
+  // 只更新已渲染行的帧数文本，避免整表重绘造成闪烁
+  const rows = Array.from(document.querySelectorAll("#connList .conn-item"));
+  rows.forEach((el) => {
+    const frames = connFrames(el.dataset.id);
+    const line2 = el.querySelector(".conn-line2");
+    if (line2) {
+      const span = line2.querySelectorAll("span")[1];
+      if (span) span.textContent = frames.length + " 帧";
+    }
   });
 }
 
-setInterval(pull, 800);
-pull();
+function pull() {
+  readBuffer((incoming) => {
+    if (incoming.frames.length === 0 && incoming.connections.length === 0 && !lastSeq) {
+      document.getElementById("hookHint").textContent = "未采集到 WS，可能是页面无 WebSocket 或注入被页面 CSP 阻止";
+    } else {
+      document.getElementById("hookHint").textContent = "";
+    }
+    consume(incoming);
+  });
+}
+
+// ---------- 事件 ----------
+
+document.getElementById("connList").addEventListener("click", (e) => {
+  const item = e.target.closest(".conn-item");
+  if (item) selectConn(item.dataset.id);
+});
+
+document.getElementById("connSearch").addEventListener("input", (e) => {
+  ui.q = e.target.value;
+  ui.loaded = 20;
+  renderConnList();
+});
+
+document.getElementById("hostSel").addEventListener("change", (e) => {
+  ui.host = e.target.value;
+  ui.loaded = 20;
+  renderConnList();
+});
+
+document.getElementById("connChips").addEventListener("click", (e) => {
+  const chip = e.target.closest(".chip");
+  if (!chip) return;
+  ui.st = chip.dataset.st;
+  ui.loaded = 20;
+  Array.from(document.querySelectorAll("#connChips .chip")).forEach((c) => c.classList.toggle("active", c === chip));
+  renderConnList();
+});
+
+document.getElementById("onlyFrames").addEventListener("change", (e) => {
+  ui.onlyFrames = e.target.checked;
+  ui.loaded = 20;
+  renderConnList();
+});
+
+document.getElementById("loadMore").addEventListener("click", () => {
+  ui.loaded += 20;
+  renderConnList();
+});
+
+document.getElementById("dirChips").addEventListener("click", (e) => {
+  const chip = e.target.closest(".dir-chip");
+  if (!chip) return;
+  ui.dir = chip.dataset.dir;
+  renderDirChips();
+  rebuildFrames();
+});
+
+document.getElementById("payloadSearch").addEventListener("input", (e) => {
+  ui.payloadQ = e.target.value;
+  rebuildFrames();
+});
+
+document.getElementById("followBtn").addEventListener("click", () => {
+  ui.follow = !ui.follow;
+  document.getElementById("followBtn").textContent = ui.follow ? "跟随最新" : "已暂停滚动";
+  if (ui.follow) frameListEl().scrollTop = frameListEl().scrollHeight;
+  updateFrameFoot();
+});
+
+frameListEl().addEventListener("scroll", () => {
+  const el = frameListEl();
+  const atBottom = el.scrollTop + el.clientHeight >= el.scrollHeight - 8;
+  if (ui.follow && !atBottom) {
+    ui.follow = false;
+    document.getElementById("followBtn").textContent = "已暂停滚动";
+    updateFrameFoot();
+  }
+});
+
+frameListEl().addEventListener("click", (e) => {
+  const btn = e.target.closest("button[data-seq]");
+  if (!btn) return;
+  const seq = Number(btn.dataset.seq);
+  const frame = connFrames(selectedId).find((f) => f.seq === seq);
+  if (frame) openOverlay(frame);
+});
+
+function openOverlay(frame) {
+  const body = document.getElementById("ovBody");
+  document.getElementById("ovTitle").textContent = "帧 · " + timeText(frame.ts, true) + " · " + frame.direction;
+  if (frame.kind === "binary") {
+    document.getElementById("ovMeta").textContent = sizeText(frame.byteLength) + (frame.truncated ? " · 预览仅前 16 字节" : "");
+    body.innerHTML = '<code>' + escapeHtml(frame.previewBase64 || "(无预览)") + '</code>' +
+      '<div class="bin-hint">疑似二进制协议，建议在代码侧解码</div>';
+  } else {
+    document.getElementById("ovMeta").textContent = String(frame.payload || "").length + " 字符 · 上限 8000";
+    body.textContent = frame.payload || "";
+  }
+  document.getElementById("overlay").classList.add("show");
+}
+
+document.getElementById("ovClose").onclick = () => document.getElementById("overlay").classList.remove("show");
+document.getElementById("ovCopy").onclick = () => {
+  const text = document.getElementById("ovBody").textContent || "";
+  navigator.clipboard.writeText(text).catch(() => {});
+};
 
 document.getElementById("clearBtn").onclick = () => {
   evalInPage(
-    "(function(){ if (window.__WS_FRAMES__) window.__WS_FRAMES__.splice(0); if (window.__WS_CONNECTIONS__) window.__WS_CONNECTIONS__.splice(0); return true; })()",
-    () => {
-      resetView();
-    }
+    "(function(){ if (window.__WS_FRAMES__) window.__WS_FRAMES__.splice(0); if (window.__WS_CONNECTIONS__) window.__WS_CONNECTIONS__.splice(0); window.__WS_VERSION__ = 3; return true; })()",
+    () => resetAll()
   );
 };
 
-// 导出：按连接分组，保留原有 direction/payload 字段名
-function buildExport(data) {
-  const connections = data.connections || [];
-  const frames = data.frames || [];
+// 导出：schema v2（按连接分组），direction/payload 等既有字段语义不变
+function buildExport(input) {
+  const connections = input.connections || [];
+  const frames = input.frames || [];
   const groups = new Map();
   const order = [];
 
@@ -152,16 +559,7 @@ function buildExport(data) {
   frames.forEach((f) => {
     let group = groups.get(f.connId);
     if (!group) {
-      group = {
-        id: f.connId || "unknown",
-        url: f.url || "",
-        openedAt: null,
-        closedAt: null,
-        closeCode: null,
-        truncated: false,
-        frameCount: 0,
-        frames: []
-      };
+      group = { id: f.connId || "unknown", url: f.url || "", openedAt: null, closedAt: null, closeCode: null, truncated: false, frameCount: 0, frames: [] };
       groups.set(group.id, group);
       order.push(group);
     }
@@ -169,36 +567,40 @@ function buildExport(data) {
       direction: f.direction,
       timestamp: new Date(f.ts).toISOString(),
       ts: f.ts,
+      kind: f.kind || "text",
+      byteLength: f.byteLength || 0,
+      previewBase64: f.previewBase64 || null,
+      truncated: !!f.truncated,
+      pending: !!f.pending,
       payload: f.payload
     });
   });
 
   return {
     exportedAt: new Date().toISOString(),
-    page: data.page,
-    connections: order.map((group) => {
-      group.frameCount = group.frames.length;
-      return group;
-    })
+    page: input.page,
+    connections: order.map((group) => { group.frameCount = group.frames.length; return group; })
   };
 }
 
 document.getElementById("exportBtn").onclick = () => {
-  readBuffer((data) => {
-    const payload = buildExport(data);
+  readBuffer((incoming) => {
+    const payload = buildExport(incoming);
     const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = "ws-frames-" + new Date().getTime() + ".json";
-    a.click();
-    URL.revokeObjectURL(url);
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(blob);
+    link.download = "ws-frames-" + new Date().getTime() + ".json";
+    link.click();
+    setTimeout(() => URL.revokeObjectURL(link.href), 2000);
   });
 };
 
-// 页面导航后钩子随旧页面销毁，需要重新注入
 chrome.devtools.network.onNavigated.addListener(() => {
   currentPage = null;
-  resetView();
-  setTimeout(() => inject(), 500);
+  resetAll();
+  setTimeout(() => injectAll(), 500);
 });
+
+injectAll();
+pull();
+setInterval(pull, 800);

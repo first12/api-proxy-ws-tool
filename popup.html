@@ -1,62 +1,68 @@
 <!DOCTYPE html>
-<html style="width:520px;padding:12px;">
+<html lang="zh-CN">
 <head>
 <meta charset="utf-8">
-<title>接口代理配置</title>
 <style>
-.rule-item{border:1px solid #ccc;padding:8px;margin:4px 0;border-radius:4px;}
-.rule-item.editing{border-color:#0a84ff;background:#f2f8ff;}
-.item-row{margin:4px 0;}
-.hint{font-size:12px;color:#666;}
+:root{
+  --surface:#fff; --surface-2:#FAFBFC; --surface-3:#F0F2F3;
+  --ink:#16191C; --text:#33393E; --muted:#666F75; --faint:#939BA0;
+  --line:#E4E7E9; --line-2:#D3D8DB;
+  --accent:#2B6A8C; --accent-hover:#235770; --accent-bg:#EAF1F5; --accent-line:#C7DAE4;
+  --ok:#2E7A57; --ok-bg:#E9F2EC; --warn:#8A6114; --warn-bg:#F7F0DE; --warn-line:#E2D2AB;
+  --bad:#A13E36; --bad-bg:#F8EAE8; --bad-line:#E7C8C4;
+  --mono:ui-monospace,"SF Mono","Cascadia Mono","Consolas",monospace;
+  --sans:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;
+}
+body{width:360px;margin:0;font-family:var(--sans);font-size:12px;color:var(--text);background:var(--surface);}
+.head{display:flex;align-items:center;gap:8px;padding:12px 14px;border-bottom:1px solid var(--line);}
+.brand{width:24px;height:24px;border-radius:4px;background:var(--accent);color:#fff;font:600 10px/24px var(--mono);text-align:center;}
+.title{font-size:13px;font-weight:600;color:var(--ink);}
+.body{padding:12px 14px;}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px;}
+.card{border:1px solid var(--line);border-radius:4px;padding:8px;background:var(--surface-2);}
+.card .n{font-family:var(--mono);font-size:16px;font-weight:600;color:var(--ink);}
+.card .l{font-size:10.5px;color:var(--muted);}
+.bar{border-radius:4px;padding:8px;font-size:11px;line-height:1.5;margin-bottom:10px;}
+.bar.warn{background:var(--warn-bg);border:1px solid var(--warn-line);color:var(--warn);}
+.bar.bad{background:var(--bad-bg);border:1px solid var(--bad-line);color:var(--bad);}
+.bar.ok{background:var(--ok-bg);border:1px solid #CFE3D7;color:var(--ok);}
+.row{display:flex;align-items:center;gap:6px;padding:6px 0;border-bottom:1px solid #EFF1F3;}
+.row .h{flex:1;font-family:var(--mono);font-size:11px;color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.row .m{font-size:10px;color:var(--faint);}
+button{font-family:inherit;font-size:11px;height:24px;border-radius:4px;border:1px solid var(--line-2);background:#fff;color:var(--text);cursor:pointer;}
+button:hover{background:var(--surface-3);}
+button.primary{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:600;}
+button.primary:hover{background:var(--accent-hover);}
+button:focus-visible{outline:none;box-shadow:0 0 0 3px rgba(43,106,140,.28);}
+.foot{display:flex;gap:8px;padding:12px 14px;border-top:1px solid var(--line);background:var(--surface-2);}
+.foot button{flex:1;height:28px;}
+.hint{font-size:10.5px;color:var(--faint);line-height:1.5;margin-top:10px;}
 </style>
 </head>
 <body>
-<h4>代理规则列表</h4>
-<div id="ruleList"></div>
-<hr/>
-<h4 id="formTitle">新增规则</h4>
-<div class="item-row">
-  <label>域名 host：</label><input id="host" placeholder="10.114.0.11" style="width:300px">
+<div class="head">
+  <div class="brand">AP</div>
+  <div class="title">接口代理</div>
 </div>
-<div class="item-row">
-  <label>接口路径：</label><input id="path" placeholder="/da-digital/api/sessions" style="width:300px">
-  <div class="hint">支持 * 通配，例如 /api/*</div>
-</div>
-<div class="item-row">
-  <label>类型：</label>
-  <select id="ruleType">
-    <option value="proxy">转发代理</option>
-    <option value="mock">Mock返回</option>
-  </select>
-</div>
-
-<div id="proxyConfigWrap">
-  <div class="item-row">
-    <label>转发模式：</label>
-    <label><input type="radio" name="proxyMode" value="pathReplace" checked> 路径替换（自动继承query，推荐）</label>
-    <label><input type="radio" name="proxyMode" value="fullUrl"> 完整目标URL</label>
+<div class="body">
+  <div class="stats">
+    <div class="card"><div class="n" id="nAll">0</div><div class="l">规则</div></div>
+    <div class="card"><div class="n" id="nOn">0</div><div class="l">生效</div></div>
+    <div class="card"><div class="n" id="nPend">0</div><div class="l">待授权</div></div>
   </div>
-  <div class="item-row" id="pathReplaceRow">
-    <label>替换后路径：</label><input id="proxyPathPrefix" placeholder="/da-digital-test/api/sessions" style="width:300px">
-  </div>
-  <div class="item-row" id="fullUrlRow" style="display:none;">
-    <label>完整目标地址：</label><input id="proxyTarget" placeholder="http://xxx/xxx?a=1" style="width:300px">
-  </div>
-</div>
 
-<div class="item-row">
-  <label>Mock JSON：</label><textarea id="mockBody" rows="4" style="width:480px;display:none;"></textarea>
-</div>
+  <div id="syncBar" class="bar ok">尚未同步</div>
 
-<div class="item-row">
-  <button id="addBtn">添加规则</button>
-  <button id="cancelBtn" style="display:none;">取消编辑</button>
+  <div id="pendingWrap"></div>
+  <div id="pendingEmpty" class="hint" style="display:none;">所有规则的域名都已授权。</div>
+
+  <div class="hint">规则配置、请求头与 Mock 在「打开配置页」中维护；WS 抓包在 DevTools 的「WS抓包」标签里。</div>
 </div>
-<div class="item-row" id="formError" style="display:none;color:#c00;"></div>
-<hr>
-<div class="hint">
-⚠️ WebSocket 不能后台劫持；抓WS报文：F12打开开发者工具，切换到【WS抓包】面板，仅查看导出，不能修改转发WS
+<div class="foot">
+  <button id="openOptions" class="primary">打开配置页</button>
+  <button id="resync">重新同步</button>
 </div>
+<script src="rules-model.js"></script>
 <script src="popup.js"></script>
 </body>
 </html>

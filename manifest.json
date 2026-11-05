@@ -1,20 +1,43 @@
 {
   "manifest_version": 3,
   "name": "接口代理&WS抓包导出工具",
-  "version": "0.4",
-  "description": "HTTP接口转发/Mock，DevTools面板抓取WebSocket消息并导出JSON",
+  "version": "0.7",
+  "description": "接口联调辅助工具：为调试环境统一请求指向，并在 DevTools 中查看 WebSocket 通信以定位联调问题",
   "permissions": [
     "storage",
-    "declarativeNetRequest"
+    "declarativeNetRequestWithHostAccess",
+    "scripting"
   ],
-  "host_permissions": [
-    "<all_urls>"
+  "optional_host_permissions": [
+    "*://*/*"
   ],
   "background": {
     "service_worker": "sw.js"
   },
   "action": {
-    "default_popup": "popup.html"
+    "default_popup": "popup.html",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "32": "icons/icon32.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
+    }
   },
-  "devtools_page": "devtools.html"
+  "icons": {
+    "16": "icons/icon16.png",
+    "32": "icons/icon32.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  },
+  "options_ui": {
+    "page": "options.html",
+    "open_in_tab": true
+  },
+  "devtools_page": "devtools.html",
+  "web_accessible_resources": [
+    {
+      "resources": ["ws-hook-source.js", "rules-model.js", "mock-inject.js"],
+      "matches": ["<all_urls>"]
+    }
+  ]
 }

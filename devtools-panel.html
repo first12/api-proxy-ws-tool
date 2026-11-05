@@ -1,25 +1,170 @@
 <!DOCTYPE html>
-<html style="width:100%;height:100%;padding:10px;box-sizing:border-box;">
+<html style="width:100%;height:100%;margin:0;">
 <head>
 <meta charset="utf-8">
 <title>WS抓包</title>
 <style>
+:root{
+  --bg:#F4F5F6; --surface:#fff; --surface-2:#FAFBFC; --surface-3:#F0F2F3;
+  --ink:#16191C; --text:#33393E; --muted:#666F75; --faint:#939BA0;
+  --line:#E4E7E9; --line-2:#D3D8DB;
+  --accent:#2B6A8C; --accent-hover:#235770; --accent-bg:#EAF1F5; --accent-line:#C7DAE4;
+  --ok:#2E7A57; --warn:#8A6114; --warn-bg:#F7F0DE; --warn-line:#E2D2AB;
+  --bad:#A13E36; --bad-bg:#F8EAE8;
+  --mono:ui-monospace,"SF Mono","Cascadia Mono","Consolas",monospace;
+  --sans:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;
+}
 *{box-sizing:border-box;}
-#log{height:calc(100vh - 120px);overflow:auto;border:1px solid #ccc;padding:8px;font-family:monospace;font-size:12px;white-space:pre-wrap;}
-.item{border-bottom:1px solid #eee;padding:4px 0;}
-.conn{border:1px solid #ddd;border-radius:4px;margin:6px 0;}
-.conn summary{cursor:pointer;padding:4px 6px;background:#fafafa;font-family:monospace;font-size:12px;}
-.conn .frames{padding:0 6px;}
-.btn{margin:4px;padding:4px 8px;cursor:pointer;}
+body{margin:0;height:100vh;display:flex;flex-direction:column;font-family:var(--sans);font-size:12px;color:var(--text);background:var(--bg);}
+.topbar{height:38px;flex:0 0 38px;display:flex;align-items:center;gap:8px;padding:0 12px;background:var(--surface);border-bottom:1px solid var(--line);}
+.topbar .t{font-size:13px;font-weight:600;color:var(--ink);}
+button{font-family:inherit;font-size:11.5px;height:25px;border-radius:4px;border:1px solid var(--line-2);background:#fff;color:var(--text);cursor:pointer;padding:0 8px;}
+button:hover{background:var(--surface-3);}
+button:disabled{color:var(--faint);cursor:default;}
+button.primary{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:600;}
+button.primary:hover{background:var(--accent-hover);}
+button.text{border:0;background:transparent;color:var(--muted);}
+button.text:hover{color:var(--accent-hover);}
+button:focus-visible,input:focus-visible,select:focus-visible{outline:none;box-shadow:0 0 0 3px rgba(43,106,140,.28);}
+.wrap{flex:1;min-height:0;display:flex;}
+
+.side{width:336px;flex:0 0 336px;display:flex;flex-direction:column;background:var(--surface);border-right:1px solid var(--line-2);}
+.side-head{height:36px;flex:0 0 36px;display:flex;align-items:center;gap:8px;padding:0 12px;border-bottom:1px solid var(--line);}
+.side-head .h{font-weight:600;color:var(--ink);}
+.badge{min-width:18px;height:16px;line-height:16px;padding:0 5px;border-radius:3px;background:var(--surface-3);font-family:var(--mono);font-size:10.5px;color:var(--muted);text-align:center;}
+.side-head .spacer{flex:1;}
+.only{display:flex;align-items:center;gap:4px;font-size:10.5px;color:var(--muted);}
+.only input{accent-color:var(--accent);}
+.side-filter{display:flex;gap:6px;padding:6px 10px;}
+.side-filter input,.side-filter select{height:24px;border:1px solid var(--line-2);border-radius:4px;font-size:11px;padding:0 6px;background:#fff;}
+.side-filter input{flex:1;min-width:0;}
+.side-filter select{max-width:110px;}
+.chips{display:flex;gap:4px;padding:0 10px 6px;}
+.chip{height:20px;padding:0 6px;font-size:10.5px;border:1px solid var(--line-2);border-radius:3px;background:#fff;color:var(--muted);}
+.chip.active{background:var(--accent-bg);border-color:var(--accent-line);color:var(--accent-hover);font-weight:600;}
+.conn-list{flex:1;overflow:auto;}
+.conn-item{padding:7px 12px 8px 14px;border-bottom:1px solid #F2F4F5;cursor:pointer;position:relative;}
+.conn-item:hover{background:var(--surface-2);}
+.conn-item.active{background:var(--accent-bg);}
+.conn-item.active::before{content:"";position:absolute;left:0;top:0;bottom:0;width:2px;background:var(--accent);}
+.conn-line1{display:flex;align-items:center;gap:5px;}
+.dot{width:6px;height:6px;border-radius:50%;background:var(--faint);flex:0 0 6px;}
+.dot.ok{background:var(--ok);}
+.conn-id{font-family:var(--mono);font-size:11.5px;font-weight:600;color:var(--ink);}
+.conn-url{flex:1;font-family:var(--mono);font-size:11px;color:var(--faint);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.conn-line2{display:flex;gap:8px;margin-top:2px;padding-left:11px;font-family:var(--mono);font-size:10px;color:var(--faint);}
+.conn-line2 .code{margin-left:auto;color:var(--muted);}
+.trunc{color:var(--warn);background:var(--warn-bg);border:1px solid var(--warn-line);border-radius:3px;padding:0 3px;font-size:9.5px;}
+.side-foot{height:26px;flex:0 0 26px;display:flex;align-items:center;gap:8px;padding:0 10px;border-top:1px solid var(--line);font-size:10px;color:var(--muted);}
+.side-foot .spacer{flex:1;}
+.side-foot button{height:20px;font-size:10.5px;}
+
+.main{flex:1;min-width:0;display:flex;flex-direction:column;background:var(--surface);position:relative;}
+.main-head{padding:8px 14px;border-bottom:1px solid var(--line);}
+.main-head .l1{display:flex;align-items:center;gap:6px;}
+.main-head .id{font-family:var(--mono);font-size:12.5px;font-weight:600;color:var(--ink);}
+.main-head .url{font-family:var(--mono);font-size:11px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.main-head .l2{margin-top:2px;font-family:var(--mono);font-size:10.5px;color:var(--faint);}
+.frame-tools{height:38px;flex:0 0 38px;display:flex;align-items:center;gap:8px;padding:0 14px;border-bottom:1px solid var(--line);background:var(--surface-2);}
+.dir-chip{height:20px;padding:0 6px;font-size:10.5px;border:1px solid var(--line-2);border-radius:3px;background:#fff;color:var(--muted);font-family:var(--mono);}
+.dir-chip.active{background:var(--accent-bg);border-color:var(--accent-line);color:var(--accent-hover);font-weight:600;}
+.frame-tools .spacer{flex:1;}
+.frame-tools input{width:150px;height:24px;border:1px solid var(--line-2);border-radius:4px;font-size:11px;padding:0 6px;}
+.frames{flex:1;overflow:auto;}
+.frame-head{position:sticky;top:0;z-index:2;display:grid;grid-template-columns:86px 62px 74px 1fr 60px;gap:8px;padding:0 14px;height:27px;align-items:center;background:var(--surface-2);border-bottom:1px solid var(--line);font-size:10.5px;color:var(--muted);}
+.frame-row{display:grid;grid-template-columns:86px 62px 74px 1fr 60px;gap:8px;padding:0 14px;min-height:28px;align-items:center;border-bottom:1px solid #F2F4F5;font-size:11px;}
+.frame-row:hover{background:var(--surface-2);}
+.frame-row .time{font-family:var(--mono);font-size:10.5px;color:var(--faint);}
+.dir{display:inline-block;min-width:34px;text-align:center;padding:0 4px;height:16px;line-height:16px;border-radius:3px;font-family:var(--mono);font-size:10px;background:var(--surface-3);color:var(--muted);}
+.dir.in{background:var(--accent-bg);color:var(--accent-hover);}
+.dir.open,.dir.close{background:transparent;color:var(--faint);border:1px solid var(--line);}
+.len{font-family:var(--mono);font-size:10.5px;color:var(--muted);}
+.len.big{color:var(--ink);font-weight:600;}
+.payload{font-size:11px;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.payload.bin{color:var(--warn);font-family:var(--mono);font-size:10.5px;}
+.frame-row button{height:20px;font-size:10.5px;padding:0 6px;visibility:hidden;}
+.frame-row:hover button,.frame-row.wide button{visibility:visible;}
+.main-foot{height:26px;flex:0 0 26px;display:flex;align-items:center;gap:10px;padding:0 14px;border-top:1px solid var(--line);background:var(--surface-2);font-size:10px;color:var(--muted);}
+.empty-main{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:6px;background:var(--surface);color:var(--muted);text-align:center;}
+.empty-main h3{margin:0;font-size:13px;font-weight:600;color:var(--ink);}
+.empty-main p{margin:0;font-size:11.5px;}
+.overlay{position:absolute;left:0;right:0;bottom:0;height:252px;background:var(--surface);border-top:1px solid var(--line-2);box-shadow:0 -12px 24px rgba(22,25,28,.06);display:none;flex-direction:column;}
+.overlay.show{display:flex;}
+.overlay-head{height:34px;flex:0 0 34px;display:flex;align-items:center;gap:8px;padding:0 14px;border-bottom:1px solid var(--line);font-size:10.5px;color:var(--muted);}
+.overlay-head .spacer{flex:1;}
+.overlay-body{flex:1;overflow:auto;padding:10px 14px;font-family:var(--mono);font-size:11.5px;line-height:1.65;white-space:pre-wrap;word-break:break-all;color:var(--text);}
+.bin-box code{display:block;background:var(--surface-2);border:1px solid var(--line);border-radius:3px;padding:6px;word-break:break-all;white-space:pre-wrap;font-size:11px;color:var(--text);}
+.bin-hint{color:var(--warn);font-size:10.5px;margin-top:4px;}
+@media (max-width:760px){ .side{width:240px;flex:0 0 240px;} .frame-tools input{width:100px;} }
 </style>
 </head>
 <body>
-<div>
-  <button class="btn" id="clearBtn">清空</button>
-  <button class="btn" id="exportBtn">导出JSON</button>
-  <span>方向：in=收到消息，out=发送消息，open/close=连接事件</span>
+<div class="topbar">
+  <span class="t">WS 抓包</span>
+  <span id="hookHint" style="font-size:10.5px;color:#939BA0;"></span>
+  <div style="flex:1"></div>
+  <button id="clearBtn" class="text">清空</button>
+  <button id="exportBtn" class="primary">导出 JSON</button>
 </div>
-<div id="log"></div>
+
+<div class="wrap">
+  <aside class="side">
+    <div class="side-head">
+      <span class="h">连接</span>
+      <span class="badge" id="connTotal">0</span>
+      <div class="spacer"></div>
+      <label class="only"><input type="checkbox" id="onlyFrames">只看有帧</label>
+    </div>
+    <div class="side-filter">
+      <input id="connSearch" type="text" placeholder="搜索 url / 连接 id">
+      <select id="hostSel"><option value="">全部 host</option></select>
+    </div>
+    <div class="chips" id="connChips">
+      <button class="chip active" data-st="all">全部</button>
+      <button class="chip" data-st="open">连接中</button>
+      <button class="chip" data-st="closed">已关闭</button>
+    </div>
+    <div class="conn-list" id="connList"></div>
+    <div class="side-foot">
+      <span id="loadInfo">已加载 0 / 0 条</span>
+      <div class="spacer"></div>
+      <button id="loadMore" class="text">加载更多</button>
+    </div>
+  </aside>
+
+  <main class="main">
+    <div class="main-head" id="mainHead">
+      <div class="l1"><span class="url">左侧选择一个连接</span></div>
+    </div>
+    <div class="frame-tools">
+      <span id="dirChips"></span>
+      <div class="spacer"></div>
+      <input id="payloadSearch" type="text" placeholder="过滤 payload">
+      <button id="followBtn" class="text">跟随最新</button>
+    </div>
+    <div class="frame-head">
+      <span>时间</span><span>方向</span><span>长度</span><span>payload</span><span>查看</span>
+    </div>
+    <div class="frames" id="frameList"></div>
+    <div class="main-foot"><span id="frameFoot"></span></div>
+    <div class="empty-main" id="emptyMain">
+      <h3 id="emptyTitle">左侧选择一个连接</h3>
+      <p id="emptyDesc">页面里建立 WebSocket 后，连接会出现在左侧索引。</p>
+    </div>
+    <div class="overlay" id="overlay">
+      <div class="overlay-head">
+        <span id="ovTitle">帧</span>
+        <div class="spacer"></div>
+        <span id="ovMeta"></span>
+        <button id="ovCopy" class="text">复制</button>
+        <button id="ovClose" class="text">关闭</button>
+      </div>
+      <div class="overlay-body" id="ovBody"></div>
+    </div>
+  </main>
+</div>
+
+<script src="rules-model.js"></script>
 <script src="devtools-panel.js"></script>
 </body>
 </html>

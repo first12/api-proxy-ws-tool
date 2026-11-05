@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>接口代理 — 配置</title>
+<style>
+:root{
+  --bg:#F4F5F6; --surface:#fff; --surface-2:#FAFBFC; --surface-3:#F0F2F3;
+  --ink:#16191C; --text:#33393E; --muted:#666F75; --faint:#939BA0;
+  --line:#E4E7E9; --line-2:#D3D8DB;
+  --accent:#2B6A8C; --accent-hover:#235770; --accent-bg:#EAF1F5; --accent-line:#C7DAE4;
+  --ring:rgba(43,106,140,.28);
+  --ok:#2E7A57; --ok-bg:#E9F2EC;
+  --warn:#8A6114; --warn-bg:#F7F0DE; --warn-line:#E2D2AB;
+  --bad:#A13E36; --bad-bg:#F8EAE8; --bad-line:#E7C8C4;
+  --sans:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei","Source Han Sans SC","Noto Sans CJK SC",sans-serif;
+  --mono:ui-monospace,"SF Mono","Cascadia Mono","Consolas","Roboto Mono","Liberation Mono",monospace;
+}
+*{box-sizing:border-box;}
+html,body{margin:0;height:100%;}
+body{font-family:var(--sans);font-size:12px;color:var(--text);background:var(--bg);display:flex;flex-direction:column;}
+button{font-family:inherit;font-size:12px;border-radius:4px;border:1px solid var(--line-2);background:#fff;color:var(--text);height:27px;padding:0 10px;cursor:pointer;}
+button:hover{background:var(--surface-3);}
+button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:none;box-shadow:0 0 0 3px var(--ring);}
+button.primary{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:600;}
+button.primary:hover{background:var(--accent-hover);}
+button.primary:disabled{background:#B9C6CD;border-color:#B9C6CD;cursor:not-allowed;}
+button.text{border:0;background:transparent;color:var(--muted);padding:0 6px;}
+button.text:hover{color:var(--accent-hover);background:var(--surface-3);}
+button.text.danger:hover{color:var(--bad);background:var(--bad-bg);}
+
+/* 顶栏 52px */
+.topbar{height:52px;flex:0 0 52px;display:flex;align-items:center;gap:12px;padding:0 20px;background:var(--surface);border-bottom:1px solid var(--line);}
+.brand{width:26px;height:26px;border-radius:4px;background:var(--accent);color:#fff;font:600 11px/26px var(--mono);text-align:center;}
+.title{font-size:15px;font-weight:600;color:var(--ink);}
+.stats{display:flex;gap:10px;color:var(--muted);font-size:10.5px;}
+.stats b{font-family:var(--mono);color:var(--text);font-weight:600;}
+.spacer{flex:1;}
+
+/* 工具栏 46px */
+.toolbar{height:46px;flex:0 0 46px;display:flex;align-items:center;gap:8px;padding:0 16px;background:var(--surface-2);border-bottom:1px solid var(--line);}
+.search{width:260px;height:27px;border:1px solid var(--line-2);border-radius:4px;padding:0 8px;font-size:11.5px;background:#fff;}
+.chip{display:inline-flex;align-items:center;gap:6px;height:24px;padding:0 8px;border:1px solid var(--line-2);border-radius:3px;background:#fff;color:var(--muted);font-size:11.5px;cursor:pointer;}
+.chip.active{background:var(--accent-bg);border-color:var(--accent-line);color:var(--accent-hover);font-weight:600;}
+.chip .n{font-family:var(--mono);font-size:10.5px;color:var(--faint);}
+.chip.active .n{color:var(--accent);}
+
+/* 表格 */
+.main{flex:1;min-height:0;display:flex;flex-direction:column;position:relative;background:var(--surface);}
+/* 自成层叠上下文：把 sticky 表头的 z-index 锁在表格区内，避免溢出到抽屉正文上方 */
+.table-wrap{flex:1;overflow:auto;position:relative;z-index:0;}
+table{width:100%;border-collapse:collapse;table-layout:fixed;}
+th,td{text-align:left;padding:0 12px;border-bottom:1px solid #EFF1F3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+th{position:sticky;top:0;z-index:2;height:30px;background:var(--surface-2);border-bottom:1px solid var(--line);font-size:10.5px;font-weight:500;color:var(--muted);}
+td{height:42px;}
+tbody tr:hover{background:var(--surface-2);}
+tbody tr.selected{background:var(--accent-bg);}
+.col-en{width:64px;} .col-match{width:352px;} .col-type{width:150px;} .col-target{width:auto;}
+.col-status{width:140px;} .col-order{width:100px;} .col-act{width:96px;text-align:right;}
+.mono{font-family:var(--mono);}
+.host{color:var(--faint);font-family:var(--mono);font-size:11px;}
+.path{color:var(--ink);font-family:var(--mono);font-size:11.5px;}
+.sub{font-size:10.5px;color:var(--muted);}
+.tag{display:inline-block;padding:0 5px;height:17px;line-height:17px;border-radius:3px;background:var(--surface-3);color:var(--muted);font-size:10.5px;}
+.status{display:inline-flex;align-items:center;gap:5px;font-size:11px;color:var(--muted);}
+.dot{width:6px;height:6px;border-radius:50%;background:var(--faint);}
+.dot.ok{background:var(--ok);} .dot.warn{background:var(--warn);} .dot.bad{background:var(--bad);}
+.badge-pending{color:var(--warn);background:var(--warn-bg);border:1px solid var(--warn-line);border-radius:3px;padding:0 4px;font-size:10px;}
+.switch{position:relative;display:inline-block;width:30px;height:17px;border-radius:9px;background:var(--line-2);cursor:pointer;vertical-align:middle;border:0;padding:0;}
+.switch.on{background:var(--accent);}
+.switch::after{content:"";position:absolute;top:2px;left:2px;width:13px;height:13px;border-radius:50%;background:#fff;transition:left .12s;}
+.switch.on::after{left:15px;}
+
+/* 状态条 */
+.statusbar{height:26px;flex:0 0 26px;display:flex;align-items:center;gap:10px;padding:0 20px;background:var(--surface-2);border-top:1px solid var(--line);font-size:10.5px;color:var(--muted);}
+.statusbar .err{color:var(--bad);}
+.statusbar .retry{height:20px;font-size:10.5px;padding:0 6px;}
+
+/* 空态 */
+.empty{position:absolute;inset:30px 0 0 0;display:none;flex-direction:column;align-items:center;justify-content:center;gap:6px;background:var(--surface);text-align:center;}
+.empty.show{display:flex;}
+.empty h3{margin:0;font-size:13px;font-weight:600;color:var(--ink);}
+.empty p{margin:0;font-size:11.5px;color:var(--muted);max-width:460px;}
+.empty .acts{margin-top:8px;display:flex;gap:8px;}
+
+/* 抽屉 392px */
+.drawer{position:fixed;top:52px;right:0;bottom:0;z-index:20;width:392px;background:var(--surface);border-left:1px solid var(--line-2);box-shadow:-16px 0 32px rgba(22,25,28,.07);display:flex;flex-direction:column;transform:translateX(100%);transition:transform .18s ease;}
+.drawer.open{transform:translateX(0);}
+.drawer-head{height:46px;flex:0 0 46px;display:flex;align-items:center;padding:0 20px;border-bottom:1px solid var(--line);}
+.drawer-head h2{margin:0;font-size:13px;font-weight:600;color:var(--ink);}
+.drawer-body{flex:1;overflow:auto;padding:18px 20px 20px;}
+.drawer-foot{flex:0 0 52px;display:flex;align-items:center;gap:8px;padding:0 20px;border-top:1px solid var(--line);background:var(--surface-2);}
+.group{margin-bottom:16px;}
+.group-title{font-size:10.5px;font-weight:600;color:var(--muted);letter-spacing:.04em;margin-bottom:8px;text-transform:uppercase;}
+.field{margin-bottom:10px;}
+.field label{display:block;font-size:11px;color:var(--muted);margin-bottom:4px;}
+.field input[type=text],.field select,.field textarea{width:100%;border:1px solid var(--line-2);border-radius:4px;padding:0 8px;height:27px;font-size:11.5px;font-family:var(--mono);background:#fff;color:var(--text);}
+.field textarea{height:80px;padding:6px 8px;resize:vertical;font-family:var(--mono);}
+.field.invalid input,.field.invalid select,.field.invalid textarea{border-color:var(--bad);}
+.field .err{display:none;margin-top:4px;padding-left:7px;border-left:3px solid var(--bad);font-size:10.5px;color:var(--bad);line-height:1.4;}
+.field.invalid .err{display:block;}
+.seg{display:flex;border:1px solid var(--line-2);border-radius:4px;overflow:hidden;}
+.seg button{flex:1;border:0;border-radius:0;height:25px;background:#fff;color:var(--muted);font-size:11px;}
+.seg button.active{background:var(--accent-bg);color:var(--accent-hover);font-weight:600;}
+.hint{font-size:10.5px;color:var(--faint);line-height:1.5;}
+.header-row{display:grid;grid-template-columns:1fr 84px 1.2fr 24px;gap:6px;margin-bottom:6px;align-items:center;}
+.header-row input,.header-row select{height:24px;border:1px solid var(--line-2);border-radius:4px;padding:0 6px;font-size:11px;font-family:var(--mono);width:100%;background:#fff;}
+.header-row .rm{border:0;background:transparent;color:var(--faint);cursor:pointer;height:24px;}
+.summary{background:var(--accent-bg);border:1px solid var(--accent-line);border-radius:4px;padding:8px;font-size:11px;color:var(--accent-hover);line-height:1.5;}
+.summary.warn{background:var(--warn-bg);border-color:var(--warn-line);color:var(--warn);}
+.summary.bad{background:var(--bad-bg);border-color:var(--bad-line);color:var(--bad);}
+.errlist{margin:6px 0 0;padding-left:16px;font-size:10.5px;color:var(--bad);}
+.checkline{display:flex;align-items:center;gap:6px;font-size:11.5px;color:var(--text);margin-bottom:6px;}
+.checkline input{width:14px;height:14px;accent-color:var(--accent);}
+@media (max-width:900px){
+  .drawer{width:100%;}
+  .col-type,.col-order{display:none;}
+  .search{width:160px;}
+}
+@media (max-width:520px){
+  .toolbar{flex-wrap:wrap;height:auto;padding:6px 12px;gap:6px;}
+  .col-target,.col-status{display:none;}
+  .topbar{padding:0 12px;gap:8px;}
+  .stats{display:none;}
+}
+</style>
+</head>
+<body>
+<header class="topbar">
+  <div class="brand">AP</div>
+  <div class="title">接口代理</div>
+  <div class="stats" id="stats"></div>
+  <div class="spacer"></div>
+  <button id="importBtn" class="text">导入</button>
+  <button id="exportBtn" class="text">导出</button>
+  <button id="newBtn" class="primary">新建规则</button>
+</header>
+
+<div class="toolbar">
+  <input id="search" class="search" type="text" placeholder="搜索 host / 路径 / 目标">
+  <button class="chip active" data-filter="all">全部 <span class="n" id="nAll">0</span></button>
+  <button class="chip" data-filter="on">生效 <span class="n" id="nOn">0</span></button>
+  <button class="chip" data-filter="off">已停用 <span class="n" id="nOff">0</span></button>
+  <button class="chip" data-filter="bad">异常 <span class="n" id="nBad">0</span></button>
+  <button class="chip" data-filter="pending">待授权 <span class="n" id="nPend">0</span></button>
+</div>
+
+<div class="main">
+  <div class="table-wrap">
+    <table>
+      <thead><tr>
+        <th class="col-en">启用</th>
+        <th class="col-match">匹配地址</th>
+        <th class="col-type">类型</th>
+        <th class="col-target">重定向目标</th>
+        <th class="col-status">状态</th>
+        <th class="col-order">优先级</th>
+        <th class="col-act">操作</th>
+      </tr></thead>
+      <tbody id="tbody"></tbody>
+    </table>
+    <div class="empty" id="empty">
+      <h3 id="emptyTitle">还没有代理规则</h3>
+      <p id="emptyDesc">新增规则后会编译为 declarativeNetRequest 动态规则，仅对已授权的域名生效。</p>
+      <div class="acts">
+        <button id="emptyClear">清除筛选</button>
+        <button id="emptyNew" class="primary">新建规则</button>
+      </div>
+    </div>
+  </div>
+  <div class="statusbar">
+    <span id="syncText">同步为 declarativeNetRequest 动态规则</span>
+    <div class="spacer"></div>
+    <span id="syncErr" class="err"></span>
+    <button id="retryBtn" class="retry text" style="display:none;">重试同步</button>
+    <span id="syncAt"></span>
+  </div>
+</div>
+
+<aside class="drawer" id="drawer">
+  <div class="drawer-head"><h2 id="drawerTitle">新建规则</h2></div>
+  <div class="drawer-body">
+    <div class="group">
+      <div class="group-title">基本信息</div>
+      <div class="field" data-field="name"><label>名称</label><input id="fName" type="text" placeholder="可选，例如 联调环境"></div>
+      <div class="checkline"><input id="fEnabled" type="checkbox" checked><label for="fEnabled" style="margin:0;">启用</label></div>
+    </div>
+
+    <div class="group">
+      <div class="group-title">匹配</div>
+      <div class="field" data-field="scheme"><label>协议</label>
+        <select id="fScheme"><option value="both">http + https</option><option value="https">仅 https</option><option value="http">仅 http</option></select>
+      </div>
+      <div class="field" data-field="host"><label>host</label><input id="fHost" type="text" placeholder="10.114.0.11 / *.example.com"><div class="err"></div></div>
+      <div class="field" data-field="path"><label>路径</label><input id="fPath" type="text" placeholder="/api/*"><div class="err"></div></div>
+      <div class="checkline"><input id="fCase" type="checkbox" checked><label for="fCase" style="margin:0;">区分大小写</label></div>
+    </div>
+
+    <div class="group">
+      <div class="group-title">动作</div>
+      <div class="seg" id="kindSeg">
+        <button data-kind="prefix">路径替换</button>
+        <button data-kind="url">完整 URL</button>
+        <button data-kind="mock">Mock</button>
+      </div>
+      <div style="height:8px;"></div>
+      <div class="field" data-field="targetPath"><label>替换后前缀</label><input id="fTargetPath" type="text" placeholder="/test/api"><div class="err"></div></div>
+      <div class="field" data-field="targetUrl"><label>完整目标地址</label><input id="fTargetUrl" type="text" placeholder="https://staging.example.com/api"><div class="err"></div></div>
+      <div class="checkline"><input id="fKeepQuery" type="checkbox" checked><label for="fKeepQuery" style="margin:0;">保留原 query</label></div>
+      <div id="mockWrap" style="display:none;">
+        <div class="hint" style="font-size:10.5px;line-height:1.7;color:var(--muted);background:#F7F8F8;border-left:2px solid var(--accent);padding:7px 9px;margin-bottom:9px;">
+          仅拦截页面脚本发起的 <code>fetch</code> / <code>XMLHttpRequest</code>，命中即返回伪造响应，未命中严格透传。<br>
+          不覆盖 <code>&lt;img&gt;</code> / <code>&lt;script src&gt;</code> 等资源加载、iframe 内部、Worker / Service Worker、WebSocket 握手。
+        </div>
+        <div class="field" data-field="mockStatus"><label>状态码</label><input id="fMockStatus" type="text" value="200"><div class="err"></div></div>
+        <div class="field" data-field="mockDelay"><label>延迟（毫秒，0–10000）</label><input id="fMockDelay" type="text" value="0"><div class="err"></div></div>
+        <div class="field"><label>响应体类型</label><select id="fMockBodyType"><option value="json">JSON</option><option value="text">纯文本</option><option value="empty">空 body</option></select></div>
+        <div class="field" data-field="mockType"><label>Content-Type</label><input id="fMockType" type="text" value="application/json"><div class="err"></div></div>
+        <div class="field" data-field="mockBody"><label>响应体</label><textarea id="fMockBody" placeholder='{"code":0}'></textarea><div class="err"></div></div>
+        <div class="field"><label>Mock 响应头</label></div>
+        <div id="mockHeaderList"></div>
+        <button id="addMockHeader" class="text" style="padding-left:0;">+ 添加响应头</button>
+        <div class="err" id="mockHeaderErr" style="display:none;border-left:3px solid var(--bad);padding-left:7px;color:var(--bad);font-size:10.5px;margin-top:6px;"></div>
+      </div>
+    </div>
+
+    <div class="group" id="headerGroup">
+      <div class="group-title">请求头</div>
+      <div id="headerList"></div>
+      <button id="addHeader" class="text" style="padding-left:0;">+ 添加请求头</button>
+      <div class="err" id="headerErr" style="display:none;border-left:3px solid var(--bad);padding-left:7px;color:var(--bad);font-size:10.5px;margin-top:6px;"></div>
+    </div>
+
+    <div class="group">
+      <div class="group-title">范围与备注</div>
+      <div class="checkline"><input class="rt" type="checkbox" value="xmlhttprequest" checked><label style="margin:0;">xmlhttprequest</label></div>
+      <div class="checkline"><input class="rt" type="checkbox" value="script"><label style="margin:0;">script</label></div>
+      <div class="checkline"><input class="rt" type="checkbox" value="image"><label style="margin:0;">image</label></div>
+      <div class="checkline"><input class="rt" type="checkbox" value="media"><label style="margin:0;">media</label></div>
+      <div class="checkline"><input class="rt" type="checkbox" value="other"><label style="margin:0;">other</label></div>
+      <div class="field"><label>备注</label><input id="fNotes" type="text"></div>
+    </div>
+
+    <div id="compileSummary" class="summary"></div>
+    <ul id="errSummary" class="errlist" style="display:none;"></ul>
+  </div>
+  <div class="drawer-foot">
+    <button id="deleteBtn" class="text danger" style="display:none;">删除</button>
+    <div class="spacer"></div>
+    <button id="cancelBtn">取消</button>
+    <button id="saveBtn" class="primary">保存</button>
+  </div>
+</aside>
+
+<script src="rules-model.js"></script>
+<script src="options.js"></script>
+</body>
+</html>
