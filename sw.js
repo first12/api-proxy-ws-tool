@@ -20,7 +20,18 @@ function buildRedirect(rule) {
 
 function toDynamicRules(proxyRules) {
   const dynamic = [];
-  let id = 1;
+  const used = new Set();
+
+  // 规则有稳定 id 时优先复用 rule.id*2(+1) 作为 DNR id：编辑同一条时 DNR id 不变
+  function pickId(rule, scheme) {
+    if (Number.isInteger(rule.id)) {
+      const preferred = rule.id * 2 + (scheme === "https" ? 0 : 1);
+      if (preferred >= 1 && preferred <= MAX_RULE_ID && !used.has(preferred)) return preferred;
+    }
+    let fallback = 1;
+    while (fallback <= MAX_RULE_ID && used.has(fallback)) fallback++;
+    return fallback <= MAX_RULE_ID ? fallback : null;
+  }
 
   for (const rule of proxyRules) {
     if (!rule.enable) continue;
@@ -29,9 +40,11 @@ function toDynamicRules(proxyRules) {
 
     // urlFilter 的 * 是通配符，分别给 http / https 生成一条，达到原 host + path 的匹配效果
     for (const scheme of ["https", "http"]) {
-      if (id > MAX_RULE_ID) break;
+      const id = pickId(rule, scheme);
+      if (id === null) break;
+      used.add(id);
       dynamic.push({
-        id: id++,
+        id,
         priority: 1,
         action: { type: "redirect", redirect },
         condition: {
