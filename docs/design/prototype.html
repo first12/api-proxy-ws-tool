@@ -1,0 +1,1307 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>api-proxy-ws-tool · UI 原型</title>
+<style>
+:root{
+  --sans:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei","Source Han Sans SC","Noto Sans CJK SC",sans-serif;
+  --mono:ui-monospace,"SF Mono","Cascadia Mono","Consolas","Roboto Mono","Liberation Mono",monospace;
+
+  --bg:#F4F5F6;
+  --surface:#FFFFFF;
+  --surface-2:#FAFBFC;
+  --surface-3:#F0F2F3;
+
+  --ink:#16191C;
+  --text:#33393E;
+  --muted:#666F75;
+  --faint:#939BA0;
+
+  --line:#E4E7E9;
+  --line-2:#D3D8DB;
+
+  --accent:#2B6A8C;
+  --accent-hover:#235770;
+  --accent-bg:#EAF1F5;
+  --accent-line:#C7DAE4;
+  --ring:rgba(43,106,140,.28);
+
+  --ok:#2E7A57;   --ok-bg:#E9F2EC;
+  --warn:#8A6114; --warn-bg:#F7F0DE;  --warn-line:#E2D2AB;
+  --bad:#A13E36;  --bad-bg:#F8EAE8;   --bad-line:#E7C8C4;
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{margin:0;height:100%}
+body{
+  font-family:var(--sans);font-size:12px;color:var(--text);background:var(--bg);
+  -webkit-font-smoothing:antialiased;overflow:hidden;
+}
+::-webkit-scrollbar{width:10px;height:10px}
+::-webkit-scrollbar-thumb{background:#D6DBDD;border:2px solid transparent;border-radius:6px;background-clip:content-box}
+::-webkit-scrollbar-thumb:hover{background:#C3C9CC;background-clip:content-box;border:2px solid transparent}
+::-webkit-scrollbar-track{background:transparent}
+button{font-family:inherit;color:inherit}
+input,select,textarea{font-family:inherit}
+
+/* ───────── 原型外壳（截图时会裁掉） ───────── */
+.harness{
+  height:36px;display:flex;align-items:center;gap:18px;padding:0 14px;
+  background:#EFF1F2;border-bottom:1px solid #DDE1E3;font-size:11.5px;color:var(--muted);
+  position:relative;z-index:5;
+}
+.h-brand{font-family:var(--mono);font-size:11px;color:var(--ink);letter-spacing:.01em}
+.h-brand .h-slash{color:var(--faint);margin:0 6px}
+.h-brand .h-sub{color:var(--faint)}
+.h-tabs{display:flex;gap:2px}
+.h-tab{
+  height:24px;padding:0 10px;border:1px solid transparent;border-radius:3px;
+  background:transparent;color:var(--muted);font-size:11.5px;cursor:pointer;
+}
+.h-tab:hover{color:var(--ink)}
+.h-tab.active{background:#fff;border-color:#D6DBDE;color:var(--ink)}
+.h-right{margin-left:auto;display:flex;align-items:center;gap:12px}
+.h-note{font-family:var(--mono);font-size:10.5px;color:var(--faint)}
+.h-seg{display:flex;border:1px solid #D6DBDE;border-radius:3px;overflow:hidden;background:#fff}
+.h-seg button{height:22px;padding:0 9px;border:0;background:transparent;font-size:11px;color:var(--muted);cursor:pointer}
+.h-seg button.active{background:var(--accent-bg);color:var(--accent-hover)}
+
+/* ───────── 通用控件 ───────── */
+#app{height:calc(100vh - 36px);position:relative}
+.page{position:absolute;inset:0;display:none;flex-direction:column;background:var(--surface)}
+.page.active{display:flex}
+.grow{flex:1 1 auto}
+
+.btn{
+  height:27px;padding:0 10px;border:1px solid transparent;border-radius:4px;background:transparent;
+  font-size:12px;color:var(--text);cursor:pointer;display:inline-flex;align-items:center;gap:6px;
+  white-space:nowrap;
+}
+.btn:hover{background:var(--surface-3)}
+.btn.primary{background:var(--accent);color:#fff;border-color:var(--accent)}
+.btn.primary:hover{background:var(--accent-hover)}
+.btn.outline{border-color:var(--line-2);background:var(--surface)}
+.btn.outline:hover{background:var(--surface-2);border-color:#C2C8CC}
+.btn[disabled]{opacity:.45;cursor:not-allowed}
+.btn.sm{height:24px;padding:0 8px;font-size:11.5px}
+.btn.text{height:auto;padding:0;color:var(--muted);font-size:11.5px}
+.btn.text:hover{background:none;color:var(--accent)}
+.btn.text.danger:hover{color:var(--bad)}
+.btn:focus-visible{outline:none;box-shadow:0 0 0 3px var(--ring)}
+
+.input{
+  height:27px;width:100%;border:1px solid var(--line-2);border-radius:4px;background:#fff;
+  padding:0 8px;font-family:var(--mono);font-size:11.5px;color:var(--ink);outline:none;
+}
+.input::placeholder{font-family:var(--sans);color:var(--faint)}
+.input:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--ring)}
+.input.error{border-color:var(--bad);background:#FDF8F7}
+.input.error:focus{box-shadow:0 0 0 3px rgba(161,62,54,.16)}
+
+.select{
+  height:27px;border:1px solid var(--line-2);border-radius:4px;background:#fff;color:var(--text);
+  font-size:11.5px;padding:0 6px;outline:none;cursor:pointer;
+}
+.select:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--ring)}
+
+.chip{
+  height:24px;padding:0 8px;border:1px solid transparent;border-radius:3px;background:transparent;
+  font-size:11.5px;color:var(--muted);cursor:pointer;display:inline-flex;align-items:center;gap:5px;
+}
+.chip:hover{background:var(--surface-3);color:var(--ink)}
+.chip.active{background:var(--accent-bg);border-color:var(--accent-line);color:var(--accent-hover)}
+.chip .n{font-family:var(--mono);font-size:10.5px;color:var(--faint)}
+.chip.active .n{color:var(--accent)}
+
+.cbx{
+  width:14px;height:14px;padding:0;margin:0;border:1px solid var(--line-2);border-radius:3px;
+  background:#fff;cursor:pointer;flex:none;display:inline-flex;align-items:center;justify-content:center;
+  vertical-align:middle;
+}
+.cbx[aria-checked="true"]{background:var(--accent);border-color:var(--accent)}
+.cbx[aria-checked="true"]::after{
+  content:"";width:4px;height:8px;margin-top:-2px;
+  border:solid #fff;border-width:0 1.5px 1.5px 0;transform:rotate(45deg);
+}
+.cbx.mixed{background:var(--accent);border-color:var(--accent)}
+.cbx.mixed::after{content:"";width:7px;height:0;border-bottom:1.5px solid #fff}
+.cbx:focus-visible{outline:none;box-shadow:0 0 0 3px var(--ring)}
+
+.switch{
+  width:30px;height:17px;border:0;padding:0;border-radius:9px;background:var(--line-2);
+  position:relative;cursor:pointer;flex:none;
+}
+.switch::after{
+  content:"";position:absolute;top:2px;left:2px;width:13px;height:13px;border-radius:50%;
+  background:#fff;transition:left .12s ease;
+}
+.switch.on{background:var(--accent)}
+.switch.on::after{left:15px}
+.switch.sm{width:26px;height:15px}
+.switch.sm::after{width:11px;height:11px}
+.switch.sm.on::after{left:13px}
+
+.seg{display:inline-flex;border:1px solid var(--line-2);border-radius:4px;background:#fff;overflow:hidden}
+.seg button{
+  height:26px;padding:0 10px;border:0;border-right:1px solid var(--line);background:#fff;
+  font-size:11.5px;color:var(--muted);cursor:pointer;
+}
+.seg button:last-child{border-right:0}
+.seg button.active{background:var(--accent-bg);color:var(--accent-hover)}
+
+.dot{width:6px;height:6px;border-radius:50%;flex:none;display:inline-block;background:var(--faint)}
+
+/* ───────── 应用顶栏 ───────── */
+.appbar{
+  height:52px;flex:none;display:flex;align-items:center;gap:10px;padding:0 20px;
+  background:var(--surface);border-bottom:1px solid var(--line);
+}
+.brandmark{
+  width:20px;height:20px;border-radius:3px;background:var(--ink);color:#fff;
+  font-family:var(--mono);font-size:9px;letter-spacing:.02em;
+  display:flex;align-items:center;justify-content:center;flex:none;
+}
+.app-title{font-size:15px;font-weight:600;color:var(--ink);margin:0;letter-spacing:.01em}
+.app-meta{font-size:11.5px;color:var(--faint);display:flex;align-items:center;gap:8px}
+.app-meta::before{content:"";width:1px;height:12px;background:var(--line-2)}
+.app-meta .mono{font-family:var(--mono);font-size:11px;color:var(--muted)}
+
+/* ───────── 页面 1：规则 ───────── */
+.toolbar{
+  height:46px;flex:none;display:flex;align-items:center;gap:10px;padding:0 20px;
+  background:var(--surface-2);border-bottom:1px solid var(--line);
+}
+.search{position:relative;width:252px}
+.search .input{padding-left:8px}
+.toolbar .chips{display:flex;gap:2px}
+.res-scope{display:flex;align-items:baseline;gap:6px;font-size:11px;color:var(--faint)}
+.res-scope b{font-weight:500;color:var(--muted)}
+
+.batchbar{
+  height:40px;flex:none;display:flex;align-items:center;gap:8px;padding:0 20px;
+  background:#EDF3F7;border-bottom:1px solid #DBE6ED;color:var(--accent-hover);font-size:11.5px;
+}
+.batchbar b{font-family:var(--mono);font-size:12px}
+.batchbar .sep{width:1px;height:14px;background:#D5E2EA;margin:0 2px}
+.batchbar .btn.text{color:var(--accent-hover)}
+.batchbar .btn.text.danger{color:var(--bad)}
+
+.tablewrap{flex:1 1 auto;overflow:auto;position:relative}
+.rule-table{width:100%;border-collapse:separate;border-spacing:0;table-layout:fixed}
+.rule-table th{
+  position:sticky;top:0;z-index:3;height:30px;padding:0 12px;text-align:left;
+  background:var(--surface-2);border-bottom:1px solid var(--line);
+  font-size:11px;font-weight:500;color:var(--muted);letter-spacing:.02em;
+}
+.rule-table th:first-child{padding-left:20px}
+.rule-table th:last-child{text-align:right;padding-right:20px}
+.rule-table tbody tr{height:42px;cursor:default}
+.rule-table tbody tr:hover{background:var(--surface-2)}
+.rule-table tbody tr.selected{background:#F2F7F9}
+.rule-table td{
+  padding:0 12px;border-bottom:1px solid #EFF1F3;font-size:12px;
+  overflow:hidden;white-space:nowrap;text-overflow:ellipsis;vertical-align:middle;
+}
+.rule-table td:first-child{padding-left:20px}
+.rule-table td:last-child{padding-right:20px;text-align:right}
+.match-cell{display:flex;align-items:baseline;gap:8px;min-width:0}
+.match-cell .host{font-family:var(--mono);font-size:11px;color:var(--faint);flex:none;max-width:45%;overflow:hidden;text-overflow:ellipsis}
+.match-cell .path{font-family:var(--mono);font-size:12px;color:var(--ink);overflow:hidden;text-overflow:ellipsis}
+.type-tag{
+  display:inline-block;height:18px;line-height:18px;padding:0 5px;border-radius:3px;
+  background:var(--surface-3);color:var(--text);font-size:11px;
+}
+.type-tag.mock{background:var(--warn-bg);color:var(--warn)}
+.type-sub{font-size:11px;color:var(--faint);margin-left:6px}
+.target{font-family:var(--mono);font-size:11.5px;color:var(--text)}
+.target.missing{color:var(--bad);font-family:var(--sans)}
+.target.muted{color:var(--faint)}
+.status{display:flex;align-items:center;gap:6px}
+.status span.lab{font-size:11.5px}
+.status .dot{background:var(--ok)}
+.status.off .dot{background:var(--faint)}
+.status.warn .dot{background:var(--warn)}
+.status.bad .dot{background:var(--bad)}
+.status.off{color:var(--faint)}
+.status.warn{color:var(--warn)}
+.status.bad{color:var(--bad)}
+.prio{display:flex;align-items:center;gap:6px}
+.prio .p{font-family:var(--mono);font-size:10.5px;color:var(--faint);border:1px solid var(--line);border-radius:3px;padding:1px 4px}
+.prio .conflict{font-size:10.5px;color:var(--warn);background:var(--warn-bg);border:1px solid var(--warn-line);border-radius:3px;padding:1px 4px;cursor:help}
+.ops{display:flex;justify-content:flex-end;gap:10px}
+
+.statusbar{
+  height:26px;flex:none;display:flex;align-items:center;gap:10px;padding:0 20px;
+  border-top:1px solid var(--line);background:var(--surface-2);
+  font-size:11px;color:var(--faint);
+}
+.statusbar .mono{font-family:var(--mono);font-size:10.5px}
+
+.empty-state{
+  position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:10px;padding:40px;background:var(--surface);color:var(--muted);
+}
+.empty-state h3{font-size:13px;font-weight:600;color:var(--ink);margin:0}
+.empty-state p{margin:0;font-size:11.5px;color:var(--faint);max-width:360px;text-align:center;line-height:1.6}
+.empty-state .q{font-family:var(--mono);font-size:11.5px;color:var(--ink);background:var(--surface-3);padding:2px 6px;border-radius:3px}
+.empty-state .acts{display:flex;gap:10px;margin-top:2px}
+
+/* 抽屉 */
+.drawer{
+  position:absolute;top:52px;right:0;bottom:0;width:392px;z-index:4;display:flex;flex-direction:column;
+  background:var(--surface);border-left:1px solid var(--line-2);
+  box-shadow:-16px 0 32px rgba(22,25,28,.07);
+}
+.drawer-head{
+  height:50px;flex:none;display:flex;align-items:center;gap:8px;padding:0 16px 0 20px;border-bottom:1px solid var(--line);
+}
+.drawer-head h2{font-size:13px;font-weight:600;color:var(--ink);margin:0}
+.drawer-head .rid{font-family:var(--mono);font-size:10.5px;color:var(--faint)}
+.drawer-body{flex:1 1 auto;overflow:auto;padding:18px 20px 20px}
+.field{margin-bottom:16px}
+.field > label{display:flex;align-items:center;gap:6px;font-size:11.5px;font-weight:500;color:var(--muted);margin-bottom:6px}
+.field .req{font-size:10.5px;color:var(--faint)}
+.field .hint{font-size:10.5px;color:var(--faint);margin-top:5px;line-height:1.5}
+.field .err{display:flex;align-items:flex-start;gap:6px;font-size:10.5px;color:var(--bad);margin-top:6px;line-height:1.5}
+.field .err::before{content:"";width:3px;height:11px;background:var(--bad);border-radius:1px;margin-top:2px;flex:none}
+.field.err label{color:var(--bad)}
+.field-row{display:flex;align-items:center;gap:10px;margin-bottom:18px;padding-bottom:16px;border-bottom:1px solid var(--line)}
+.field-row .switch-wrap{display:flex;align-items:center;gap:8px}
+.field-row .note{font-size:10.5px;color:var(--faint);line-height:1.5;flex:1}
+.group-label{font-size:10.5px;color:var(--faint);letter-spacing:.04em;margin:2px 0 12px}
+textarea.input{
+  height:auto;min-height:96px;padding:7px 8px;line-height:1.6;resize:vertical;font-size:11px;font-family:var(--mono);
+}
+.drawer-foot{
+  flex:none;border-top:1px solid var(--line);padding:10px 20px 12px;background:var(--surface-2);
+}
+.drawer-foot .note{font-size:10.5px;color:var(--faint);line-height:1.5;margin-bottom:9px}
+.drawer-foot .acts{display:flex;justify-content:flex-end;gap:8px}
+.drawer-danger{margin-top:22px;padding-top:14px;border-top:1px solid var(--line)}
+.drawer-danger .btn.text{color:var(--bad)}
+.drawer-danger .btn.text{font-size:11px}
+
+/* ───────── 页面 2：WS ───────── */
+.ws-body{flex:1 1 auto;display:flex;min-height:0;background:var(--surface)}
+.conns{
+  width:336px;flex:none;display:flex;flex-direction:column;border-right:1px solid var(--line-2);
+  background:var(--surface);min-height:0;
+}
+.pane-head{height:36px;flex:none;display:flex;align-items:center;gap:7px;padding:0 12px 0 14px;border-bottom:1px solid var(--line)}
+.pane-title{font-size:12px;font-weight:600;color:var(--ink)}
+.count-badge{
+  min-width:18px;height:16px;line-height:16px;text-align:center;padding:0 5px;border-radius:3px;
+  background:var(--surface-3);font-family:var(--mono);font-size:10.5px;color:var(--muted);
+}
+.pane-head .grow{flex:1}
+.mini-toggle{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--muted);cursor:pointer}
+.pane-filter{padding:8px 12px 6px;display:flex;gap:6px}
+.pane-filter .search{width:auto;flex:1}
+.pane-filter .select{width:118px;flex:none}
+.pane-filter2{display:flex;align-items:center;padding:0 12px 8px}
+.pane-filter2 .chips{display:flex;gap:1px}
+.pane-filter2 .chip{height:22px;padding:0 6px;font-size:11px}
+.conn-list{flex:1 1 auto;overflow:auto;min-height:0}
+.conn-item{
+  width:100%;display:flex;gap:8px;padding:7px 12px 8px 14px;border:0;border-bottom:1px solid #F0F2F3;
+  background:transparent;text-align:left;cursor:pointer;position:relative;
+}
+.conn-item:hover{background:var(--surface-2)}
+.conn-item.sel{background:#EDF3F7}
+.conn-item.sel::before{content:"";position:absolute;left:0;top:0;bottom:0;width:2px;background:var(--accent)}
+.conn-item .dot{margin-top:3px}
+.ci-main{min-width:0;flex:1}
+.ci-l1{display:flex;align-items:baseline;gap:7px;min-width:0}
+.cid{font-family:var(--mono);font-size:11px;color:var(--ink);flex:none;font-weight:600}
+.ci-url{font-family:var(--mono);font-size:11px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ci-l2{display:flex;align-items:center;gap:6px;margin-top:3px;font-size:10.5px;color:var(--faint)}
+.ci-l2 .mono{font-family:var(--mono);font-size:10px}
+.ci-l2 .warn{color:var(--warn)}
+.ci-right{margin-left:auto;font-family:var(--mono);font-size:10px;color:var(--faint)}
+.pane-foot{
+  height:26px;flex:none;display:flex;align-items:center;gap:8px;padding:0 12px;border-top:1px solid var(--line);
+  background:var(--surface-2);font-size:10.5px;color:var(--faint);
+}
+.pane-foot .mono{font-family:var(--mono);font-size:10px;color:var(--muted)}
+.pane-foot .load{color:var(--accent);cursor:pointer}
+.pane-foot .load:hover{text-decoration:underline}
+
+.frames{flex:1 1 auto;display:flex;flex-direction:column;min-width:0;min-height:0}
+.conn-head{flex:none;padding:9px 16px 8px;border-bottom:1px solid var(--line);background:var(--surface)}
+.ch-l1{display:flex;align-items:center;gap:8px;min-width:0}
+.ch-id{font-family:var(--mono);font-size:12px;font-weight:600;color:var(--ink);flex:none}
+.ch-url{font-family:var(--mono);font-size:11.5px;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ch-l2{margin-top:4px;display:flex;align-items:center;gap:0;font-size:10.5px;color:var(--faint)}
+.ch-l2 .mono{font-family:var(--mono);font-size:10px}
+.ch-l2 .sep{margin:0 7px;color:var(--line-2)}
+.ch-l2 .ok{color:var(--ok)}
+.ch-l2 .warn{color:var(--warn)}
+.frame-toolbar{
+  height:38px;flex:none;display:flex;align-items:center;gap:8px;padding:0 16px;
+  border-bottom:1px solid var(--line);background:var(--surface-2);
+}
+.frame-toolbar .chips{display:flex;gap:1px;align-items:center}
+.frame-toolbar .chip{height:22px;padding:0 6px;font-size:11px}
+.frame-toolbar .dir-dot{width:5px;height:5px;border-radius:2px;background:var(--accent)}
+.frame-toolbar .search{width:186px}
+.pause-toggle{display:flex;align-items:center;gap:7px;font-size:11px;color:var(--muted);cursor:pointer;margin-left:4px}
+.pause-toggle.on{color:var(--accent-hover)}
+.frames-table{flex:1 1 auto;overflow:auto;min-height:0}
+.frame-table{width:100%;border-collapse:separate;border-spacing:0;table-layout:fixed}
+.frame-table th{
+  position:sticky;top:0;z-index:2;height:27px;padding:0 10px;background:var(--surface-2);
+  border-bottom:1px solid var(--line);font-size:10.5px;font-weight:500;color:var(--muted);text-align:left;
+}
+.frame-table th.r{text-align:right}
+.frame-table th:last-child{text-align:right;padding-right:16px}
+.frame-table td{
+  height:28px;padding:0 10px;border-bottom:1px solid #F2F4F5;font-size:11px;
+  overflow:hidden;white-space:nowrap;text-overflow:ellipsis;vertical-align:middle;
+}
+.frame-table td:last-child{padding-right:16px;text-align:right}
+.frame-table tr:hover{background:var(--surface-2)}
+.frame-table tr.sel{background:#F0F6F9}
+.f-time{font-family:var(--mono);font-size:10.5px;color:var(--faint)}
+.dir-b{
+  display:inline-flex;align-items:center;justify-content:center;min-width:34px;height:17px;
+  border-radius:3px;font-family:var(--mono);font-size:10.5px;
+}
+.dir-b.in{background:var(--accent-bg);color:var(--accent-hover)}
+.dir-b.out{background:var(--surface-3);color:var(--text)}
+.dir-b.open,.dir-b.close{color:var(--faint)}
+.f-len{font-family:var(--mono);font-size:10.5px;color:var(--muted);text-align:right}
+.f-len.big{color:var(--ink)}
+.f-payload{font-family:var(--mono);font-size:11px;color:var(--text)}
+.f-payload.dim{color:var(--faint)}
+.f-view{font-size:10.5px;color:var(--accent);cursor:pointer;background:none;border:0;padding:0}
+.f-view:hover{text-decoration:underline}
+.frames-foot{
+  height:26px;flex:none;display:flex;align-items:center;gap:8px;padding:0 16px;border-top:1px solid var(--line);
+  background:var(--surface-2);font-size:10.5px;color:var(--faint);
+}
+.frames-foot .mono{font-family:var(--mono);font-size:10px;color:var(--muted)}
+.frames-foot .paused{color:var(--accent-hover);display:flex;align-items:center;gap:5px}
+.frames-foot .paused .dot{background:var(--accent);width:5px;height:5px}
+.frames-empty{align-items:center;justify-content:center;display:flex;flex-direction:column;gap:8px;color:var(--faint);font-size:11.5px;padding:60px 0}
+
+.payload-viewer{
+  position:absolute;left:337px;right:0;bottom:26px;height:252px;z-index:3;display:flex;flex-direction:column;
+  background:var(--surface);border-top:1px solid var(--line-2);box-shadow:0 -12px 24px rgba(22,25,28,.06);
+}
+.pv-head{height:36px;flex:none;display:flex;align-items:center;gap:8px;padding:0 16px;border-bottom:1px solid var(--line)}
+.pv-head .t{font-size:11.5px;color:var(--ink);font-weight:500}
+.pv-head .mono{font-family:var(--mono);font-size:10.5px;color:var(--faint)}
+.pv-body{flex:1;overflow:auto;padding:12px 16px;font-family:var(--mono);font-size:11.5px;line-height:1.65;color:var(--text);white-space:pre-wrap;word-break:break-all;background:var(--surface-2)}
+</style>
+</head>
+<body>
+
+<div class="harness">
+  <div class="h-brand">api-proxy-ws-tool<span class="h-slash">/</span><span class="h-sub">design</span></div>
+  <div class="h-tabs">
+    <button class="h-tab active" data-page="proxy">代理配置</button>
+    <button class="h-tab" data-page="ws">WS 抓包</button>
+  </div>
+  <div class="h-right">
+    <span class="h-note" id="hNote">1440 × 900</span>
+    <div class="h-seg" id="hSeg" hidden>
+      <button data-scn="few" class="active">5 条连接</button>
+      <button data-scn="many">48 条连接</button>
+    </div>
+  </div>
+</div>
+
+<div id="app">
+
+  <!-- ══════════════ 页面 1：代理配置 ══════════════ -->
+  <section class="page active" id="page-proxy">
+    <div class="appbar">
+      <div class="brandmark">AP</div>
+      <h1 class="app-title">接口代理</h1>
+      <div class="app-meta" id="proxyMeta"></div>
+      <div class="grow"></div>
+      <button class="btn outline" id="btnImport">导入</button>
+      <button class="btn outline">导出</button>
+      <button class="btn primary" id="btnNew">新建规则</button>
+    </div>
+
+    <div class="toolbar">
+      <div class="search"><input class="input" id="pSearch" placeholder="搜索 host、路径或目标地址" autocomplete="off" spellcheck="false"></div>
+      <div class="chips" id="pStatusChips"></div>
+      <div class="grow"></div>
+      <span class="res-scope"><b>资源类型</b>全部 5 类</span>
+    </div>
+
+    <div class="batchbar" id="batchBar" hidden>
+      <span>已选 <b id="batchN">0</b> 条规则</span>
+      <span class="sep"></span>
+      <button class="btn text">启用</button>
+      <button class="btn text">停用</button>
+      <button class="btn text danger">删除</button>
+      <div class="grow"></div>
+      <button class="btn text" id="batchClear">取消选择</button>
+    </div>
+
+    <div class="tablewrap" id="tableWrap">
+      <table class="rule-table">
+        <thead>
+          <tr>
+            <th style="width:54px"><button class="cbx" id="selAll" role="checkbox" aria-checked="false" aria-label="全选"></button></th>
+            <th style="width:64px">启用</th>
+            <th style="width:352px">匹配地址</th>
+            <th style="width:150px">类型</th>
+            <th>重定向目标</th>
+            <th style="width:140px">状态</th>
+            <th style="width:100px">优先级</th>
+            <th style="width:96px">操作</th>
+          </tr>
+        </thead>
+        <tbody id="ruleBody"></tbody>
+      </table>
+      <div class="empty-state" id="pEmpty" hidden>
+        <h3 id="pEmptyTitle">没有匹配的规则</h3>
+        <p id="pEmptyDesc"></p>
+        <div class="acts">
+          <button class="btn outline" id="pEmptyClear">清除筛选</button>
+          <button class="btn primary" id="pEmptyNew">新建规则</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="statusbar">
+      <span>同步为 declarativeNetRequest 动态规则</span>
+      <span class="mono" id="syncMeta"></span>
+      <div class="grow"></div>
+      <span class="mono">上次同步 12:04:52</span>
+    </div>
+
+    <!-- 编辑抽屉 -->
+    <aside class="drawer" id="drawer" hidden>
+      <div class="drawer-head">
+        <h2>编辑规则</h2>
+        <span class="rid" id="dRid"></span>
+        <div class="grow"></div>
+        <button class="btn sm" id="dClose">关闭</button>
+      </div>
+      <div class="drawer-body">
+        <div class="field-row">
+          <div class="switch-wrap"><button class="switch" id="dEnable"></button><span style="font-size:12px;color:var(--text)">启用</span></div>
+          <span class="note" id="dEnableNote">启用后写入 DNR 动态规则；停用则从规则表移除。</span>
+        </div>
+
+        <div class="group-label">匹配</div>
+        <div class="field" id="dHostField">
+          <label>host</label>
+          <input class="input" id="dHost" spellcheck="false">
+        </div>
+        <div class="field">
+          <label>接口路径 <span class="req">支持 * 通配</span></label>
+          <input class="input" id="dPath" spellcheck="false">
+          <div class="hint">与 host 拼接为 urlFilter，例：<span style="font-family:var(--mono)">10.114.0.11/api/*</span></div>
+        </div>
+
+        <div class="group-label">动作</div>
+        <div class="field">
+          <label>类型</label>
+          <div class="seg" id="dType">
+            <button data-v="proxy" class="active">转发代理</button>
+            <button data-v="mock">Mock 返回</button>
+          </div>
+        </div>
+
+        <div class="field" id="dModeField">
+          <label>转发模式</label>
+          <div class="seg" id="dMode">
+            <button data-v="pathReplace" class="active">路径替换</button>
+            <button data-v="fullUrl">完整目标 URL</button>
+          </div>
+          <div class="hint">路径替换只改 path，query 由浏览器保留；完整 URL 会整体替换目标。</div>
+        </div>
+
+        <div class="field" id="dTargetField">
+          <label id="dTargetLabel">替换后路径</label>
+          <input class="input" id="dTarget" spellcheck="false" placeholder="/da-digital-test/api/sessions">
+          <div class="hint" id="dTargetHint">只替换 path，query 与 hash 由浏览器保留。</div>
+          <div class="err" id="dTargetErr" hidden>必填。为空时该规则不会生成 DNR 规则，等同于失效。</div>
+        </div>
+
+        <div class="field" id="dMockField" hidden>
+          <label>Mock JSON <span class="req">当前版本不会生效</span></label>
+          <textarea class="input" id="dMock" spellcheck="false"></textarea>
+          <div class="hint">declarativeNetRequest 无法返回自定义响应体，该内容只会保存在 chrome.storage，不会下发。</div>
+        </div>
+
+        <div class="drawer-danger">
+          <button class="btn text" id="dDelete">删除这条规则</button>
+        </div>
+      </div>
+      <div class="drawer-foot">
+        <div class="note" id="dNote"></div>
+        <div class="acts">
+          <button class="btn" id="dCancel">取消</button>
+          <button class="btn primary" id="dSave" disabled>保存</button>
+        </div>
+      </div>
+    </aside>
+  </section>
+
+  <!-- ══════════════ 页面 2：WS 抓包 ══════════════ -->
+  <section class="page" id="page-ws">
+    <div class="appbar">
+      <div class="brandmark" style="background:var(--accent)">WS</div>
+      <h1 class="app-title">WS 抓包</h1>
+      <div class="app-meta"><span class="mono">example.local/dashboard</span></div>
+      <div class="grow"></div>
+      <button class="btn outline">清空</button>
+      <button class="btn primary">导出 JSON</button>
+    </div>
+
+    <div class="ws-body">
+      <aside class="conns">
+        <div class="pane-head">
+          <span class="pane-title">连接</span>
+          <span class="count-badge" id="connCount">0</span>
+          <label class="mini-toggle" style="margin-left:auto"><button class="switch sm" id="onlyFrames"></button>只看有帧</label>
+        </div>
+        <div class="pane-filter">
+          <div class="search"><input class="input" id="connSearch" placeholder="搜索 url 或连接 id" spellcheck="false" autocomplete="off"></div>
+          <select class="select" id="hostFilter"><option value="all">全部 host</option></select>
+        </div>
+        <div class="pane-filter2">
+          <div class="chips" id="connStatusChips">
+            <button class="chip active" data-st="all">全部</button>
+            <button class="chip" data-st="open">连接中</button>
+            <button class="chip" data-st="closed">已关闭</button>
+          </div>
+        </div>
+        <div class="conn-list" id="connList"></div>
+        <div class="pane-foot" id="connFoot"></div>
+      </aside>
+
+      <main class="frames">
+        <div class="conn-head" id="connHead"></div>
+        <div class="frame-toolbar">
+          <div class="chips" id="dirChips"></div>
+          <div class="search"><input class="input" id="frameSearch" placeholder="过滤 payload 文本" spellcheck="false" autocomplete="off"></div>
+          <div class="grow"></div>
+          <label class="pause-toggle" id="pauseToggle"><button class="switch sm" id="pauseSwitch"></button>暂停滚动</label>
+        </div>
+        <div class="frames-table" id="frameTableWrap">
+          <table class="frame-table">
+            <thead>
+              <tr>
+                <th style="width:104px">时间</th>
+                <th style="width:66px">方向</th>
+                <th style="width:74px" class="r">长度</th>
+                <th>载荷摘要</th>
+                <th style="width:64px"></th>
+              </tr>
+            </thead>
+            <tbody id="frameBody"></tbody>
+          </table>
+        </div>
+        <div class="frames-foot">
+          <span id="framesMeta"></span>
+          <div class="grow"></div>
+          <span id="followState"></span>
+        </div>
+      </main>
+    </div>
+  </section>
+
+  <!-- 大 payload 查看器 -->
+  <div class="payload-viewer" id="payloadViewer" hidden>
+    <div class="pv-head">
+      <span class="t" id="pvTitle"></span>
+      <span class="mono" id="pvMeta"></span>
+      <div class="grow"></div>
+      <button class="btn sm" id="pvCopy">复制</button>
+      <button class="btn sm" id="pvClose">关闭</button>
+    </div>
+    <div class="pv-body" id="pvBody"></div>
+  </div>
+</div>
+
+<script>
+(function(){
+  "use strict";
+  const $ = (s, r) => (r || document).querySelector(s);
+  const $$ = (s, r) => Array.from((r || document).querySelectorAll(s));
+  const esc = (s) => String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+  const pad3 = (n) => String(n).padStart(3, "0");
+  const hms = (sec) => [Math.floor(sec / 3600) % 24, Math.floor(sec / 60) % 60, sec % 60]
+    .map((n) => String(n).padStart(2, "0")).join(":");
+
+  /* ═══════════ 页面 1 数据 ═══════════ */
+  const RULES = [
+    { id: "r1", host: "10.114.0.11", path: "/da-digital/api/sessions", type: "proxy", mode: "pathReplace", target: "/da-digital-test/api/sessions", enable: true, prio: 1, conflict: "与 r2（/da-digital/api/*）重叠匹配，同优先级下 DNR 命中顺序不确定" },
+    { id: "r2", host: "10.114.0.11", path: "/da-digital/api/*", type: "proxy", mode: "pathReplace", target: "/da-digital-test/api", enable: true, prio: 1, conflict: "与 r1、r11 重叠匹配" },
+    { id: "r3", host: "10.114.0.11", path: "/da-digital/ws/*", type: "proxy", mode: "fullUrl", target: "https://10.114.0.20:8443/da-digital/ws", enable: true, prio: 1 },
+    { id: "r4", host: "api.example.local", path: "/v2/orders", type: "mock", mode: "pathReplace", target: "", enable: true, prio: 1, mockSize: 412 },
+    { id: "r5", host: "api.example.local", path: "/v2/profile", type: "mock", mode: "pathReplace", target: "", enable: true, prio: 1, mockSize: 268 },
+    { id: "r6", host: "cdn.example.local", path: "/assets/*.json", type: "proxy", mode: "fullUrl", target: "https://cdn-test.example.local/assets", enable: true, prio: 1 },
+    { id: "r7", host: "10.114.0.11", path: "/da-digital/api/session/detail", type: "proxy", mode: "pathReplace", target: "", enable: true, prio: 1 },
+    { id: "r8", host: "qa.example.local", path: "/api/*", type: "proxy", mode: "pathReplace", target: "/api-v2", enable: false, prio: 1 },
+    { id: "r9", host: "old.example.local", path: "/legacy/*", type: "proxy", mode: "fullUrl", target: "http://10.114.0.30:9000/legacy", enable: false, prio: 1 },
+    { id: "r10", host: "api.example.local", path: "/v1/ws/handshake", type: "mock", mode: "pathReplace", target: "", enable: true, prio: 1, mockSize: 204 },
+    { id: "r11", host: "10.114.0.11", path: "/da-digital/api/session/state", type: "proxy", mode: "pathReplace", target: "/da-digital-test/api/session/state", enable: true, prio: 1, conflict: "与 r2 的 * 通配重叠，同优先级下 DNR 命中顺序不确定" },
+    { id: "r12", host: "10.114.0.11", path: "/da-digital/api/reports", type: "proxy", mode: "fullUrl", target: "https://10.114.0.20:8443/da-digital/api/reports", enable: true, prio: 1 },
+    { id: "r13", host: "qa.example.local", path: "/api/orders", type: "proxy", mode: "pathReplace", target: "/api-v2/orders", enable: false, prio: 1 },
+    { id: "r14", host: "10.114.0.11", path: "/da-digital/static/*", type: "proxy", mode: "pathReplace", target: "/static", enable: true, prio: 1 },
+    { id: "r15", host: "10.114.0.11", path: "/da-digital/api/exports", type: "proxy", mode: "pathReplace", target: "/da-digital-test/api/exports", enable: true, prio: 1 },
+    { id: "r16", host: "dash.example.local", path: "/api/widgets/*", type: "proxy", mode: "fullUrl", target: "https://dash-test.example.local/api/widgets", enable: true, prio: 1 },
+    { id: "r17", host: "qa.example.local", path: "/api/legacy", type: "proxy", mode: "pathReplace", target: "/api", enable: false, prio: 1 }
+  ];
+
+  const pState = { q: "", status: "all", sel: new Set(), drawId: null };
+  let draft = null;
+
+  function statusOf(r) {
+    if (!r.enable) return { key: "off", tone: "off", label: "已停用" };
+    if (r.type === "mock") return { key: "issue", tone: "warn", label: "Mock 不生效" };
+    if (r.target) return { key: "on", tone: "", label: "生效" };
+    return { key: "issue", tone: "bad", label: "配置错误" };
+  }
+
+  function dnrCount() {
+    return RULES.filter((r) => r.enable && r.type === "proxy" && r.target).length;
+  }
+
+  function visibleRules() {
+    const q = pState.q.trim().toLowerCase();
+    return RULES.filter((r) => {
+      const st = statusOf(r);
+      if (pState.status !== "all" && st.key !== pState.status) return false;
+      if (!q) return true;
+      const hay = [r.host, r.path, r.target || "", r.type, r.id].join(" ").toLowerCase();
+      return hay.indexOf(q) !== -1;
+    });
+  }
+
+  function renderProxyChips() {
+    const counts = { all: RULES.length, on: 0, off: 0, issue: 0 };
+    RULES.forEach((r) => { counts[statusOf(r).key] += 1; });
+    const items = [["all", "全部"], ["on", "生效"], ["off", "已停用"], ["issue", "异常"]];
+    $("#pStatusChips").innerHTML = items.map(([k, label]) =>
+      '<button class="chip ' + (pState.status === k ? "active" : "") + '" data-st="' + k + '">' +
+      label + '<span class="n">' + counts[k] + "</span></button>"
+    ).join("");
+
+    $("#proxyMeta").innerHTML = RULES.length + " 条规则 · " + counts.on + " 生效 · " +
+      counts.off + " 停用 · <span style=\"color:var(--warn)\">" + counts.issue + " 异常</span> · 2 组冲突";
+    $("#syncMeta").textContent = "已启用 " + dnrCount() + " 条 → 生成 " + (dnrCount() * 2) + " 条 DNR 规则";
+  }
+
+  function renderProxyTable() {
+    const list = visibleRules();
+    let html = "";
+
+    list.forEach((r) => {
+      const st = statusOf(r);
+      const selected = pState.sel.has(r.id);
+      const mock = r.type === "mock";
+      const target = mock
+        ? '<span class="target muted">Mock JSON · ' + r.mockSize + " B</span>"
+        : r.target
+          ? '<span class="target">' + esc(r.target) + "</span>"
+          : '<span class="target missing">未设置</span>';
+      html +=
+        '<tr class="' + (selected ? "selected" : "") + '">' +
+          '<td><button class="cbx" role="checkbox" data-sel="' + r.id + '" aria-checked="' + (selected ? "true" : "false") + '"></button></td>' +
+          "<td><button class=\"switch " + (r.enable ? "on" : "") + '" data-tog="' + r.id + '" aria-label="启用规则"></button></td>' +
+          '<td><div class="match-cell"><span class="host">' + esc(r.host) + '</span><span class="path">' + esc(r.path) + "</span></div></td>" +
+          "<td><span class=\"type-tag" + (mock ? " mock" : "") + '">' + (mock ? "Mock" : "转发") +
+            '</span><span class="type-sub">' + (mock ? "DNR 不支持" : (r.mode === "pathReplace" ? "路径替换" : "完整 URL")) + "</span></td>" +
+          "<td>" + target + "</td>" +
+          '<td><span class="status ' + st.tone + '"><span class="dot"></span><span class="lab">' + st.label + "</span></span></td>" +
+          '<td><div class="prio"><span class="p">P' + r.prio + "</span>" +
+            (r.conflict ? '<span class="conflict" title="' + esc(r.conflict) + '">冲突</span>' : "") + "</div></td>" +
+          '<td><div class="ops"><button class="btn text" data-edit="' + r.id + '">编辑</button><button class="btn text" data-del="' + r.id + '">删除</button></div></td>' +
+        "</tr>";
+    });
+
+    $("#ruleBody").innerHTML = html;
+    const allSel = list.length > 0 && list.every((r) => pState.sel.has(r.id));
+    const someSel = !allSel && list.some((r) => pState.sel.has(r.id));
+    const selAll = $("#selAll");
+    selAll.setAttribute("aria-checked", allSel ? "true" : "false");
+    selAll.classList.toggle("mixed", someSel);
+    selAll.setAttribute("aria-label", allSel ? "取消全选" : "全选");
+
+    const empty = list.length === 0;
+    $("#pEmpty").hidden = !empty;
+    if (empty) {
+      const conds = pState.q.trim() || (pState.status !== "all" ? "当前筛选" : "");
+      $("#pEmptyTitle").textContent = RULES.length ? "没有匹配的规则" : "还没有代理规则";
+      $("#pEmptyDesc").innerHTML = RULES.length
+        ? (pState.q.trim()
+            ? '没有 host、路径或目标包含 <span class="q">' + esc(pState.q.trim()) + "</span> 的规则。"
+            : "当前筛选条件下没有规则。")
+        : "规则会同步为 declarativeNetRequest 动态重定向，新建后立即生效。";
+      $("#pEmptyClear").textContent = pState.q.trim() ? "清除搜索" : "重置筛选";
+    }
+
+    // 批量条
+    const n = pState.sel.size;
+    $("#batchBar").hidden = n === 0 || empty;
+    $("#batchN").textContent = n;
+    if (n === 0) return;
+  }
+
+  function renderProxy() {
+    renderProxyChips();
+    renderProxyTable();
+  }
+
+  /* ── 抽屉 ── */
+  function openDrawer(id) {
+    const r = RULES.find((x) => x.id === id);
+    pState.drawId = r ? r.id : null;
+    draft = r ? Object.assign({}, r) : {
+      id: "r-new", host: "", path: "", type: "proxy", mode: "pathReplace", target: "",
+      enable: true, prio: 1
+    };
+    $("#drawer").hidden = false;
+    $("#drawer h2").textContent = r ? "编辑规则" : "新建规则";
+    $("#dRid").textContent = r ? r.id.toUpperCase() : "未保存";
+    $("#dHost").value = draft.host;
+    $("#dPath").value = draft.path;
+    $("#dTarget").value = draft.target && draft.type !== "mock" ? draft.target : "";
+    $("#dMock").value = draft.type === "mock"
+      ? '{\n  "code": 0,\n  "data": { "id": 17, "state": "running" }\n}'
+      : "";
+    $("#dTargetErr").hidden = true;
+    refreshDrawer();
+    validateDrawer();
+  }
+
+  function refreshDrawer() {
+    const isMock = draft.type === "mock";
+    $$("#dType button").forEach((b) => b.classList.toggle("active", b.dataset.v === draft.type));
+    $$("#dMode button").forEach((b) => b.classList.toggle("active", b.dataset.v === draft.mode));
+    $("#dModeField").hidden = isMock;
+    $("#dTargetField").hidden = isMock;
+    $("#dMockField").hidden = !isMock;
+    $("#dEnable").classList.toggle("on", !!draft.enable);
+
+    const label = $("#dTargetLabel");
+    const hint = $("#dTargetHint");
+    const input = $("#dTarget");
+    if (draft.mode === "fullUrl") {
+      label.textContent = "完整目标 URL";
+      hint.textContent = "整体替换请求目标，原 query 不再保留。";
+      input.placeholder = "https://10.114.0.20:8443/da-digital/api";
+    } else {
+      label.textContent = "替换后路径";
+      hint.textContent = "只替换 path，query 与 hash 由浏览器保留。";
+      input.placeholder = "/da-digital-test/api/sessions";
+    }
+
+    $("#dEnableNote").textContent = draft.enable
+      ? "启用后写入 declarativeNetRequest 动态规则；停用则从规则表移除。"
+      : "已停用：该规则不会生成任何 DNR 规则。";
+  }
+
+  function validateDrawer() {
+    const errs = {};
+    if (!draft.host.trim()) errs.host = "必填。host 与 path 拼接为 urlFilter。";
+    if (!draft.path.trim()) errs.path = "必填。支持 * 通配，例如 /api/*。";
+    if (draft.type !== "mock" && !String(draft.target).trim()) {
+      errs.target = draft.mode === "fullUrl"
+        ? "必填。完整目标 URL 为空时不会生成 DNR 规则。"
+        : "必填。为空时该规则不会生成 DNR 规则，等同于失效。";
+    }
+
+    $("#dHost").classList.toggle("error", !!errs.host);
+    $("#dPath").classList.toggle("error", !!errs.path);
+    $("#dTarget").classList.toggle("error", !!errs.target);
+
+    const old = $("#dHost").parentElement.querySelector(".err");
+    if (old) old.remove();
+    if (errs.host) {
+      const div = document.createElement("div");
+      div.className = "err";
+      div.textContent = errs.host;
+      $("#dHost").parentElement.appendChild(div);
+    }
+    const tErr = $("#dTargetErr");
+    tErr.hidden = !errs.target;
+    if (errs.target) tErr.textContent = errs.target;
+    $("#dTargetField").classList.toggle("err", !!errs.target);
+    $("#dTarget").parentElement.classList.toggle("err", !!errs.target);
+    void 0;
+
+    const bad = Object.keys(errs).length > 0;
+    $("#dSave").disabled = bad;
+
+    if (draft.type === "mock") {
+      $("#dNote").textContent = "Mock 规则不会被 declarativeNetRequest 应用，仅保存在 chrome.storage。";
+    } else if (bad) {
+      $("#dNote").textContent = "当前规则未生成 DNR 规则（缺少替换目标），保存前需要补全。";
+    } else if (!draft.enable) {
+      $("#dNote").textContent = "规则已停用，保存后不会写入 DNR。";
+    } else {
+      $("#dNote").textContent = "保存后生成 2 条 DNR 规则（https / http 各 1 条），urlFilter 为 host + path。";
+    }
+  }
+
+  function closeDrawer() {
+    $("#drawer").hidden = true;
+    pState.drawId = null;
+    draft = null;
+  }
+
+  function saveDraft() {
+    if (!draft) return;
+    if (pState.drawId) {
+      const i = RULES.findIndex((r) => r.id === pState.drawId);
+      if (i > -1) RULES[i] = Object.assign(RULES[i], draft);
+    } else {
+      RULES.push(Object.assign({}, draft, { id: "r" + (RULES.length + 1) }));
+    }
+    closeDrawer();
+    renderProxy();
+  }
+
+  /* ═══════════ 页面 2 数据 ═══════════ */
+  function tracePayload() {
+    const steps = [];
+    for (let i = 0; i < 16; i++) {
+      steps.push('{"i":' + i + ',"name":"graph-node-' + (i + 1) + '","ms":' + (9 + i * 4) +
+        ',"state":"' + (i % 4 === 0 ? "retry" : "ok") + '"}');
+    }
+    return '{"type":"session.trace","id":17,"traceId":"t-9f2c","steps":[' + steps.join(",") + "]}";
+  }
+
+  function detailPayload() {
+    const rows = [];
+    for (let i = 0; i < 24; i++) {
+      rows.push('{"id":' + (100 + i) + ',"name":"session-' + (19 + i) + '","owner":"w-' + (i % 4 + 1) +
+        '","progress":' + (i / 24).toFixed(2) + ',"tags":["digital","batch-4"]}');
+    }
+    return '{"type":"session.detail","id":17,"rows":[' + rows.join(",") + "]}";
+  }
+
+  const FEW = [
+    { id: "ws-6", url: "wss://10.114.0.11/da-digital/ws/notify", openedAt: "12:04:58.112", closedAt: null, closeCode: null, frameCount: 3, truncated: false,
+      frames: [
+        { t: "12:04:58.112", dir: "open", payload: "wss://10.114.0.11/da-digital/ws/notify" },
+        { t: "12:04:58.401", dir: "in", payload: '{"type":"notice","level":"info","msg":"worker w-3 ready"}' },
+        { t: "12:04:59.002", dir: "in", payload: '{"type":"notice","level":"warn","msg":"queue backlog 3"}' }
+      ] },
+    { id: "ws-5", url: "wss://10.114.0.11/da-digital/ws/session", openedAt: "12:04:11.204", closedAt: null, closeCode: null, frameCount: 24, truncated: false,
+      frames: [
+        { t: "12:04:11.204", dir: "open", payload: "wss://10.114.0.11/da-digital/ws/session" },
+        { t: "12:04:11.341", dir: "out", payload: '{"type":"subscribe","topics":["session.list","session.update"]}' },
+        { t: "12:04:11.402", dir: "in", payload: '{"type":"subscribed","channel":"session.list","replay":false}' },
+        { t: "12:04:16.007", dir: "out", payload: '{"type":"ping","seq":41}' },
+        { t: "12:04:16.010", dir: "in", payload: '{"type":"pong","seq":41,"driftMs":3}' },
+        { t: "12:04:17.226", dir: "in", payload: '{"type":"session.update","id":17,"state":"running","progress":0.42,"worker":"w-3"}' },
+        { t: "12:04:19.004", dir: "out", payload: '{"type":"session.detail","id":17}' },
+        { t: "12:04:19.042", dir: "in", payload: '{"type":"ack","op":"detail","id":17}' },
+        { t: "12:04:21.007", dir: "out", payload: '{"type":"ping","seq":42}' },
+        { t: "12:04:21.011", dir: "in", payload: '{"type":"pong","seq":42,"driftMs":4}' },
+        { t: "12:04:22.318", dir: "in", payload: '{"type":"session.update","id":19,"state":"queued","progress":0.0,"worker":null}' },
+        { t: "12:04:23.640", dir: "out", payload: '{"type":"session.patch","id":19,"fields":{"priority":2}}' },
+        { t: "12:04:23.688", dir: "in", payload: '{"type":"ack","op":"patch","id":19}' },
+        { t: "12:04:26.002", dir: "in", payload: tracePayload(), big: true },
+        { t: "12:04:26.009", dir: "out", payload: '{"type":"session.trace.received","id":17,"tookMs":7}' },
+        { t: "12:04:26.014", dir: "in", payload: "[binary]" },
+        { t: "12:04:26.201", dir: "out", payload: "[binary]" },
+        { t: "12:04:28.005", dir: "in", payload: detailPayload(), big: true },
+        { t: "12:04:29.011", dir: "out", payload: '{"type":"ping","seq":43}' },
+        { t: "12:04:29.014", dir: "in", payload: '{"type":"pong","seq":43,"driftMs":3}' },
+        { t: "12:04:31.442", dir: "in", payload: '{"type":"session.list","items":[{"id":17,"state":"running"},{"id":19,"state":"queued"}]}' },
+        { t: "12:04:33.006", dir: "out", payload: '{"type":"unsubscribe","topics":["session.update"]}' },
+        { t: "12:04:33.040", dir: "in", payload: '{"type":"unsubscribed","topics":["session.update"]}' },
+        { t: "12:04:36.118", dir: "in", payload: '{"type":"heartbeat","t":1762315806118,"uptimeMs":24800}' }
+      ] },
+    { id: "ws-4", url: "wss://10.114.0.11/da-digital/ws/session", openedAt: "12:03:46.331", closedAt: "12:04:09.412", closeCode: 1000, frameCount: 12, truncated: false, frames: [] },
+    { id: "ws-3", url: "wss://dash.example.local/ws/dashboard", openedAt: "12:03:12.008", closedAt: "12:03:12.009", closeCode: 1006, frameCount: 0, truncated: false, frames: [] },
+    { id: "ws-2", url: "wss://10.114.0.21/ws/task/17", openedAt: "12:02:58.734", closedAt: "12:04:02.118", closeCode: 1000, frameCount: 2374, truncated: true, frames: [] }
+  ];
+
+  const PATTERNS = [
+    ["10.114.0.11", "/da-digital/ws/session"],
+    ["10.114.0.11", "/da-digital/ws/notify"],
+    ["dash.example.local", "/ws/dashboard"],
+    ["10.114.0.11", "/da-digital/ws/trace"],
+    ["10.114.0.21", "/ws/task/17"],
+    ["api.example.local", "/v2/ws/stream"],
+    ["10.114.0.11", "/da-digital/ws/session"],
+    ["10.114.0.11", "/da-digital/ws/notify"]
+  ];
+  const FCOUNT = [4, 26, 0, 11, 2, 18, 7, 0];
+
+  const MANY = [];
+  for (let i = 0; i < 48; i++) {
+    const p = PATTERNS[i % PATTERNS.length];
+    const id = "ws-" + (48 - i);
+    const openSec = 12 * 3600 + 5 * 60 + 4 - i * 13;
+    const closed = i >= 7;
+    const count = FCOUNT[i % FCOUNT.length] + (i % 3);
+    const closeCode = closed ? (i % 11 === 0 ? 1006 : i % 7 === 0 ? 1001 : 1000) : null;
+    MANY.push({
+      id: id,
+      url: "wss://" + p[0] + p[1],
+      openedAt: hms(openSec) + "." + pad3((i * 37) % 1000),
+      closedAt: closed ? hms(openSec + 6 + count * 2) + "." + pad3((i * 91) % 1000) : null,
+      closeCode: closeCode,
+      frameCount: count,
+      truncated: i % 9 === 0,
+      frames: []
+    });
+  }
+
+  const TPL = [
+    '{"type":"ping","seq":%d}',
+    '{"type":"pong","seq":%d,"driftMs":3}',
+    '{"type":"session.update","id":%d,"state":"running","progress":0.61}',
+    '{"type":"ack","op":"detail","id":%d}',
+    '{"type":"log","level":"info","msg":"flush ok","batch":%d}'
+  ];
+
+  function framesFor(conn) {
+    if (conn.frames.length) return conn.frames;
+    if (!conn.frameCount) return [];
+    const n = Math.min(conn.frameCount, 2000);
+    const base = 12 * 3600 + 4 * 60 + 41;
+    const out = [];
+    for (let k = 0; k < n; k++) {
+      let dir;
+      if (k === 0) dir = "open";
+      else if (k === n - 1 && conn.closedAt) dir = "close";
+      else dir = k % 4 === 0 ? "out" : "in";
+      let payload;
+      if (dir === "open") payload = conn.url;
+      else if (dir === "close") payload = "code=" + conn.closeCode;
+      else if (k % 15 === 0) payload = tracePayload();
+      else payload = TPL[k % TPL.length].replace("%d", String(k));
+      out.push({ t: hms(base + Math.floor(k * 1.4)) + "." + pad3((k * 57) % 1000), dir: dir, payload: payload, big: payload.length > 600 });
+    }
+    conn.frames = out;
+    return out;
+  }
+
+  const wState = {
+    scn: "few", sel: "ws-6", q: "", host: "all", onlyFrames: false, st: "all",
+    dir: "all", frameQ: "", paused: false, loaded: 999
+  };
+
+  const connsAll = () => (wState.scn === "many" ? MANY : FEW);
+  const selectedConn = () => connsAll().find((c) => c.id === wState.sel) || null;
+
+  function filteredConns() {
+    const q = wState.q.trim().toLowerCase();
+    return connsAll().filter((c) => {
+      if (wState.host !== "all" && c.url.indexOf("wss://" + wState.host) !== 0) return false;
+      if (wState.onlyFrames && !c.frameCount) return false;
+      if (wState.st === "open" && c.closedAt) return false;
+      if (wState.st === "closed" && !c.closedAt) return false;
+      if (!q) return true;
+      return (c.id + " " + c.url).toLowerCase().indexOf(q) !== -1;
+    });
+  }
+
+  function renderConnHead() {
+    const c = selectedConn();
+    if (!c) {
+      $("#connHead").innerHTML = '<div class="ch-l1"><span class="ch-url" style="color:var(--faint)">未选择连接</span></div>';
+      return;
+    }
+    const truncated = c.truncated ? '<span class="warn">已截断</span>' : "未截断";
+    const left = c.closedAt
+      ? '<span>打开</span><span class="mono">' + c.openedAt + '</span><span class="sep">·</span>' +
+        '<span>关闭</span><span class="mono">' + c.closedAt + '</span><span class="sep">·</span>' +
+        "<span>closeCode</span><span class=\"mono\">" + c.closeCode + "</span>"
+      : '<span>打开</span><span class="mono">' + c.openedAt + '</span><span class="sep">·</span><span class="ok">连接中</span>';
+    $("#connHead").innerHTML =
+      '<div class="ch-l1"><span class="dot" style="background:' + (c.closedAt ? "var(--faint)" : "var(--ok)") + '"></span>' +
+        '<span class="ch-id">' + c.id + '</span><span class="ch-url">' + esc(c.url) + "</span></div>" +
+      '<div class="ch-l2">' + left +
+        '<span class="sep">·</span><span class="mono">' + c.frameCount + " 帧</span>" +
+        '<span class="sep">·</span><span class="' + (c.truncated ? "warn" : "") + '">' + truncated + "</span></div>";
+  }
+
+  function renderConnList() {
+    const list = filteredConns();
+    const connCount = connsAll().length;
+    $("#connCount").textContent = connCount;
+
+    const show = Math.min(wState.loaded, list.length);
+    let html = "";
+    list.slice(0, show).forEach((c) => {
+      const closed = !!c.closedAt;
+      html +=
+        '<button class="conn-item ' + (c.id === wState.sel ? "sel" : "") + '" data-conn="' + c.id + '">' +
+          '<span class="dot" style="background:' + (closed ? "var(--faint)" : "var(--ok)") + '"></span>' +
+          '<div class="ci-main">' +
+            '<div class="ci-l1"><span class="cid">' + c.id + '</span><span class="ci-url">' + esc(c.url.replace("wss://", "")) + "</span></div>" +
+            '<div class="ci-l2"><span class="mono">' + c.openedAt.slice(0, 8) + "</span><span>·</span>" +
+              "<span>" + c.frameCount + " 帧</span>" +
+              (c.truncated ? '<span class="warn">截断</span>' : "") +
+              '<span class="ci-right">' + (closed ? "code " + c.closeCode : "进行中") + "</span></div>" +
+          "</div>" +
+        "</button>";
+    });
+    if (!list.length) {
+      html = '<div class="frames-empty" style="padding:36px 0"><div>没有匹配的连接</div><div style="color:var(--faint);font-size:10.5px">调整搜索或筛选条件</div></div>';
+    }
+    $("#connList").innerHTML = html;
+
+    $("#connFoot").innerHTML =
+      "已加载 <span class=\"mono\">" + show + '</span> / <span class="mono">' + list.length + "</span> 条" +
+      (show < list.length ? ' <span class="load" id="loadMore">滚动加载更多</span>' : "");
+  }
+
+  function renderFrames() {
+    renderConnHead();
+    const c = selectedConn();
+    const frames = c ? framesFor(c) : [];
+    const total = frames.length;
+
+    const dirs = ["all", "in", "out", "open", "close"];
+    const labels = { all: "全部", in: "in", out: "out", open: "open", close: "close" };
+    const counts = { all: total, in: 0, out: 0, open: 0, close: 0 };
+    frames.forEach((f) => { counts[f.dir] += 1; });
+
+    $("#dirChips").innerHTML = dirs.map((d) => {
+      const n = counts[d];
+      return '<button class="chip ' + (wState.dir === d ? "active" : "") + '" data-dir="' + d + '">' +
+        labels[d] + '<span class="n">' + n + "</span></button>";
+    }).join("");
+
+    const q = wState.frameQ.trim().toLowerCase();
+    const list = frames.filter((f) => {
+      if (wState.dir !== "all" && f.dir !== wState.dir) return false;
+      if (!q) return true;
+      return f.payload.toLowerCase().indexOf(q) !== -1;
+    });
+
+    let html = "";
+    list.forEach((f, i) => {
+      const isBig = f.big || f.payload.length > 600;
+      const dim = f.dir === "open" || f.dir === "close";
+      html +=
+        '<tr><td><span class="f-time">' + f.t + "</span></td>" +
+        '<td><span class="dir-b ' + f.dir + '">' + f.dir + "</span></td>" +
+        '<td><span class="f-len ' + (isBig ? "big" : "") + '">' + f.payload.length + "</span></td>" +
+        '<td><span class="f-payload ' + (dim ? "dim" : "") + '">' + esc(f.payload) + "</span></td>" +
+        "<td>" + (isBig ? '<button class="f-view" data-fv="' + i + '">查看</button>' : "") + "</td></tr>";
+    });
+
+    if (!list.length) {
+      html = '<tr><td colspan="5"><div class="frames-empty">' +
+        (c ? (total ? "当前筛选条件下没有帧" : "该连接没有帧（可能在建连阶段就关闭）") : "左侧选择一个连接") +
+        "</div></td></tr>";
+    }
+    $("#frameBody").innerHTML = html;
+    $("#frameBody").dataset.frameIndex = JSON.stringify(list.map((f) => f.payload.length));
+    pvFrames = list;
+
+    $("#framesMeta").textContent = "显示 " + list.length + " / " + total + " 帧 · 缓冲上限 2000 帧" +
+      (c && c.truncated ? " · 该连接已被截断" : "");
+
+    $("#followState").innerHTML = wState.paused
+      ? '<span class="paused"><span class="dot"></span>已暂停滚动</span>'
+      : '<span style="color:var(--muted)">跟随最新</span>';
+    $("#pauseSwitch").classList.toggle("on", wState.paused);
+    $("#pauseToggle").classList.toggle("on", wState.paused);
+  }
+
+  let pvFrames = [];
+
+  function showPayload(idx) {
+    const f = pvFrames[idx];
+    if (!f) return;
+    $("#payloadViewer").hidden = false;
+    $("#pvTitle").textContent = "帧 · " + f.t + " · " + f.dir;
+    $("#pvMeta").textContent = f.payload.length + " 字符 · 上限 8000 字符" + (f.payload.length >= 8000 ? " · 已截断" : "");
+    $("#pvBody").textContent = f.payload;
+  }
+
+  function refreshHostFilter() {
+    const sel = $("#hostFilter");
+    const hosts = Array.from(new Set(connsAll().map((c) => c.url.replace("wss://", "").split("/")[0]))).sort();
+    sel.innerHTML = '<option value="all">全部 host</option>' +
+      hosts.map((h) => '<option value="' + h + '">' + h + "</option>").join("");
+    sel.value = hosts.indexOf(wState.host) > -1 ? wState.host : "all";
+    wState.host = sel.value;
+  }
+
+  function renderWs() {
+    refreshHostFilter();
+    renderConnList();
+    renderFrames();
+    $("#onlyFrames").classList.toggle("on", wState.onlyFrames);
+    $$("#connStatusChips .chip").forEach((b) => b.classList.toggle("active", b.dataset.st === wState.st));
+  }
+
+  /* ═══════════ 事件 ═══════════ */
+  // 顶栏页签
+  $$(".h-tab").forEach((b) => b.addEventListener("click", () => proto.page(b.dataset.page)));
+
+  // 页面 1
+  $("#pSearch").addEventListener("input", (e) => { pState.q = e.target.value; renderProxyTable(); });
+  $("#pStatusChips").addEventListener("click", (e) => {
+    const b = e.target.closest(".chip");
+    if (!b) return;
+    pState.status = b.dataset.st;
+    renderProxyChips();
+    renderProxyTable();
+  });
+  $("#ruleBody").addEventListener("click", (e) => {
+    const t = e.target.closest("[data-tog],[data-edit],[data-sel]");
+    if (!t) return;
+    if (t.dataset.tog) {
+      const r = RULES.find((x) => x.id === t.dataset.tog);
+      if (r) { r.enable = !r.enable; renderProxy(); }
+      return;
+    }
+    if (t.dataset.edit) { openDrawer(t.dataset.edit); return; }
+    if (t.dataset.sel) {
+      const id = t.dataset.sel;
+      if (pState.sel.has(id)) pState.sel.delete(id); else pState.sel.add(id);
+      renderProxyTable();
+    }
+  });
+  $("#selAll").addEventListener("click", () => {
+    const list = visibleRules();
+    const allSel = list.length > 0 && list.every((r) => pState.sel.has(r.id));
+    if (allSel) list.forEach((r) => pState.sel.delete(r.id));
+    else list.forEach((r) => pState.sel.add(r.id));
+    renderProxyTable();
+  });
+  $("#batchClear").addEventListener("click", () => { pState.sel.clear(); renderProxyTable(); });
+  $("#pEmptyClear").addEventListener("click", () => {
+    pState.q = ""; pState.status = "all";
+    $("#pSearch").value = "";
+    renderProxy(); renderProxyTable();
+  });
+  $("#pEmptyNew").addEventListener("click", () => openDrawer(null));
+  $("#btnNew").addEventListener("click", () => openDrawer(null));
+  $("#dClose").addEventListener("click", closeDrawer);
+  $("#dCancel").addEventListener("click", closeDrawer);
+  $("#dSave").addEventListener("click", saveDraft);
+  $("#dDelete").addEventListener("click", () => {
+    if (!pState.drawId) { closeDrawer(); return; }
+    const i = RULES.findIndex((r) => r.id === pState.drawId);
+    if (i > -1) RULES.splice(i, 1);
+    closeDrawer(); renderProxy();
+  });
+  $("#dEnable").addEventListener("click", () => {
+    if (!draft) return;
+    draft.enable = !draft.enable;
+    refreshDrawer(); validateDrawer();
+  });
+  $("#dHost").addEventListener("input", (e) => { draft.host = e.target.value; validateDrawer(); });
+  $("#dPath").addEventListener("input", (e) => { draft.path = e.target.value; validateDrawer(); });
+  $("#dTarget").addEventListener("input", (e) => { draft.target = e.target.value; validateDrawer(); });
+  $("#dMock").addEventListener("input", (e) => { draft.mockBody = e.target.value; });
+  $("#dType").addEventListener("click", (e) => {
+    const b = e.target.closest("button[data-v]"); if (!b || !draft) return;
+    draft.type = b.dataset.v; refreshDrawer(); validateDrawer();
+  });
+  $("#dMode").addEventListener("click", (e) => {
+    const b = e.target.closest("button[data-v]"); if (!b || !draft) return;
+    draft.mode = b.dataset.v;
+    if (draft.target && draft.mode === "pathReplace" && /^https?:/.test(draft.target)) draft.target = "";
+    $("#dTarget").value = draft.target;
+    refreshDrawer(); validateDrawer();
+  });
+
+  // 页面 2
+  $("#connList").addEventListener("click", (e) => {
+    const item = e.target.closest("[data-conn]");
+    if (!item) return;
+    wState.sel = item.dataset.conn;
+    renderConnList(); renderFrames();
+  });
+  $("#connFoot").addEventListener("click", (e) => {
+    if (!e.target.closest("#loadMore")) return;
+    wState.loaded = Math.min(filteredConns().length, wState.loaded + 8);
+    renderConnList();
+  });
+  $("#connSearch").addEventListener("input", (e) => { wState.q = e.target.value; renderConnList(); });
+  $("#hostFilter").addEventListener("change", (e) => { wState.host = e.target.value; renderConnList(); });
+  $("#onlyFrames").addEventListener("click", () => { wState.onlyFrames = !wState.onlyFrames; renderWs(); });
+  $("#connStatusChips").addEventListener("click", (e) => {
+    const b = e.target.closest(".chip"); if (!b) return;
+    wState.st = b.dataset.st; renderWs();
+  });
+  $("#dirChips").addEventListener("click", (e) => {
+    const b = e.target.closest(".chip"); if (!b) return;
+    wState.dir = b.dataset.dir; renderFrames();
+  });
+  $("#frameSearch").addEventListener("input", (e) => { wState.frameQ = e.target.value; renderFrames(); });
+  $("#pauseSwitch").addEventListener("click", () => { wState.paused = !wState.paused; renderFrames(); });
+  $("#frameBody").addEventListener("click", (e) => {
+    const b = e.target.closest("[data-fv]");
+    if (!b) return;
+    showPayload(Number(b.dataset.fv));
+  });
+  $("#pvClose").addEventListener("click", () => { $("#payloadViewer").hidden = true; });
+  $("#pvCopy").addEventListener("click", () => {
+    const t = $("#pvBody").textContent;
+    if (navigator.clipboard) navigator.clipboard.writeText(t);
+  });
+
+  document.addEventListener("keydown", (e) => {
+    if (e.key !== "Escape") return;
+    if (!$("#payloadViewer").hidden) { $("#payloadViewer").hidden = true; return; }
+    if (!$("#drawer").hidden) closeDrawer();
+  });
+
+  /* ═══════════ 对外接口（截图脚本用） ═══════════ */
+  const proto = {
+    page(p) {
+      $$(".h-tab").forEach((b) => b.classList.toggle("active", b.dataset.page === p));
+      $("#page-proxy").classList.toggle("active", p === "proxy");
+      $("#page-ws").classList.toggle("active", p === "ws");
+      $("#hSeg").hidden = p !== "ws";
+      $("#hNote").textContent = p === "proxy" ? "1440 × 900" : "1200 × 800";
+    },
+    scenario(s) {
+      wState.scn = s;
+      wState.q = ""; $("#connSearch").value = "";
+      wState.dir = "all"; wState.frameQ = ""; $("#frameSearch").value = "";
+      wState.paused = true;
+      $("#payloadViewer").hidden = true;
+      if (s === "many") {
+        wState.host = "10.114.0.11";
+        wState.onlyFrames = true;
+        wState.st = "all";
+        wState.loaded = 22;
+        wState.sel = "ws-31";
+      } else {
+        wState.host = "all";
+        wState.onlyFrames = false;
+        wState.st = "all";
+        wState.loaded = 999;
+        wState.sel = "ws-5";
+      }
+      $$("#hSeg button").forEach((b) => b.classList.toggle("active", b.dataset.scn === s));
+      renderWs();
+      const el = $(".conn-item.sel");
+      if (el && el.scrollIntoView) el.scrollIntoView({ block: "center" });
+    },
+    openDrawer(id) { openDrawer(id); },
+    closeDrawer() { closeDrawer(); },
+    selectConn(id) { wState.sel = id; renderConnList(); renderFrames(); },
+    pause(v) { wState.paused = !!v; renderFrames(); },
+    scrollConns(v) { $("#connList").scrollTop = v; }
+  };
+  window.proto = proto;
+
+  $$("#hSeg button").forEach((b) => b.addEventListener("click", () => proto.scenario(b.dataset.scn)));
+
+  /* 初始渲染 */
+  renderProxy();
+  renderWs();
+  proto.scenario("few");
+})();
+</script>
+</body>
+</html>
