@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html style="width:100%;height:100%;padding:10px;box-sizing:border-box;">
+<head>
+<meta charset="utf-8">
+<title>WS抓包</title>
+<style>
+*{box-sizing:border-box;}
+#log{height:calc(100vh - 120px);overflow:auto;border:1px solid #ccc;padding:8px;font-family:monospace;font-size:12px;white-space:pre-wrap;}
+.item{border-bottom:1px solid #eee;padding:4px 0;}
+.btn{margin:4px;padding:4px 8px;cursor:pointer;}
+</style>
+</head>
+<body>
+<div>
+  <button class="btn" id="clearBtn">清空</button>
+  <button class="btn" id="exportBtn">导出JSON</button>
+  <span>方向：in=收到消息，out=发送消息，open/close=连接事件</span>
+</div>
+<div id="log"></div>
+<script src="devtools-panel.js"></script>
+</body>
+</html>

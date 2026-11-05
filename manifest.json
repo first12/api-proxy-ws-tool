@@ -1,0 +1,20 @@
+{
+  "manifest_version": 3,
+  "name": "接口代理&WS抓包导出工具",
+  "version": "0.4",
+  "description": "HTTP接口转发/Mock，DevTools面板抓取WebSocket消息并导出JSON",
+  "permissions": [
+    "storage",
+    "declarativeNetRequest"
+  ],
+  "host_permissions": [
+    "<all_urls>"
+  ],
+  "background": {
+    "service_worker": "sw.js"
+  },
+  "action": {
+    "default_popup": "popup.html"
+  },
+  "devtools_page": "devtools.html"
+}
