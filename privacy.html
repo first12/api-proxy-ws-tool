@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>隐私政策 · 接口代理&amp;WS抓包导出工具</title>
+  <style>
+    :root {
+      --text: #1f2328;
+      --muted: #656d76;
+      --border: #d0d7de;
+      --bg: #ffffff;
+      --bg-soft: #f6f8fa;
+      --accent: #0969da;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      padding: 40px 20px 80px;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC",
+        "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+      color: var(--text);
+      background: var(--bg-soft);
+      line-height: 1.7;
+    }
+    .container {
+      max-width: 760px;
+      margin: 0 auto;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 40px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+    }
+    h1 {
+      margin: 0 0 8px;
+      font-size: 26px;
+    }
+    .meta {
+      color: var(--muted);
+      font-size: 14px;
+      margin-bottom: 32px;
+      padding-bottom: 16px;
+      border-bottom: 1px solid var(--border);
+    }
+    h2 {
+      font-size: 18px;
+      margin: 32px 0 12px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid var(--border);
+    }
+    ol { padding-left: 22px; }
+    li { margin-bottom: 10px; }
+    li strong { color: var(--text); }
+    code {
+      background: var(--bg-soft);
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-size: 13px;
+    }
+    .en {
+      margin-top: 40px;
+      padding-top: 24px;
+      border-top: 2px solid var(--border);
+      color: #3a414a;
+    }
+    .en h2 { border-bottom: none; }
+    .en p { margin: 12px 0; }
+    a { color: var(--accent); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    .footer {
+      margin-top: 40px;
+      padding-top: 16px;
+      border-top: 1px solid var(--border);
+      color: var(--muted);
+      font-size: 13px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>隐私政策</h1>
+    <div class="meta">
+      扩展名称：接口代理&amp;WS抓包导出工具（api-proxy-ws-tool）<br />
+      生效日期：2026-11-12
+    </div>
+
+    <h2>一、数据处理声明</h2>
+    <ol>
+      <li><strong>不收集任何个人数据。</strong>本扩展不收集、不上传、不共享、不出售浏览历史、请求内容、响应内容或 WebSocket 报文。</li>
+      <li><strong>代理规则只存在本机。</strong>规则保存在 <code>chrome.storage.local</code>，不上传、不云同步；卸载扩展即删除。规则中的请求头（可能含访问令牌）同样只存本机明文、不上传；导出规则时默认脱敏。</li>
+      <li><strong>WebSocket 帧只存在页面内存。</strong>帧数据由注入到被检查页面的脚本保存在该页面的内存中，刷新/关闭页面即释放；只有用户点击"导出"时才会生成本地文件，文件去向由用户自行决定。</li>
+      <li><strong>权限按需申请。</strong>安装时不申请任何网站访问权限；只有在用户新增规则并点击【授权此域名】后，才会针对该域名弹出系统授权框；授权可随时撤销。</li>
+      <li><strong>无分析 SDK、无远程配置。</strong>扩展不包含统计、埋点、崩溃上报、A/B 或远程开关；所有代码随安装包分发，运行时不下载、不执行任何远程代码。</li>
+      <li><strong>不读取无关数据。</strong>授权范围只来自用户创建的规则域名，不读取当前标签页 URL、不写入存储、不打印日志、不外发。</li>
+      <li><strong>联系方式</strong>：<a href="https://gitee.com/first12/api-proxy-ws-tool/issues">仓库 Issue</a>。</li>
+      <li><strong>变更</strong>：隐私政策更新会在商店描述与仓库同时标注日期。</li>
+    </ol>
+
+    <div class="en">
+      <h2>Privacy Policy (English)</h2>
+      <p>This extension collects no user data. Redirect rules and user-configured request headers are stored locally via <code>chrome.storage.local</code> and are never uploaded; exported rule files redact sensitive header values by default. WebSocket frames are kept in the inspected page's memory and are only written to a local file when the user explicitly exports them. No analytics, telemetry, remote configuration, or remotely hosted code is used. Host permissions are optional and requested per domain only after an explicit user action; they can be revoked at any time in the browser's extension settings.</p>
+    </div>
+
+    <div class="footer">
+      © 2026 api-proxy-ws-tool contributors · MIT License
+    </div>
+  </div>
+</body>
+</html>

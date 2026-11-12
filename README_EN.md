@@ -105,7 +105,7 @@ A Chrome (Manifest V3) browser extension for frontend development, QA, and API d
 
 ## Open Source Edition Notes
 
-- **Version**: v0.4 (open-source community edition)
+- **Version**: v0.7 (open-source community edition)
 - **License**: [MIT License](./LICENSE) — anyone may freely use, modify, and distribute this project, provided the copyright notice is retained.
 - **Upgrading**: the extension is pure frontend code (vanilla HTML / CSS / JS) with no build step — pull the latest code and click "Reload" on `chrome://extensions/` to upgrade.
 - **Feedback & Contribution**: issues and pull requests are welcome via the Gitee repository.

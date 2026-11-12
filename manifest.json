@@ -2,6 +2,7 @@
   "manifest_version": 3,
   "name": "接口代理&WS抓包导出工具",
   "version": "0.7",
+  "minimum_chrome_version": "102",
   "description": "接口联调辅助工具：为调试环境统一请求指向，并在 DevTools 中查看 WebSocket 通信以定位联调问题",
   "permissions": [
     "storage",

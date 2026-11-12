@@ -14,3 +14,7 @@ build/
 .DS_Store
 Thumbs.db
 desktop.ini
+
+# 打包产物
+dist/
+*.zip
