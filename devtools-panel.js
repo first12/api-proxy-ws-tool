@@ -576,9 +576,22 @@ function buildExport(input) {
     });
   });
 
+  // wsDataList：按时间顺序平铺所有收发（in/out）的文本帧 payload，便于下游直接消费消息数据
+  const timed = [];
+  order.forEach((group) => {
+    group.frames.forEach((f) => {
+      if ((f.direction === "in" || f.direction === "out") && f.kind === "text") {
+        timed.push({ ts: f.ts, payload: f.payload });
+      }
+    });
+  });
+  timed.sort((a, b) => a.ts - b.ts);
+  const wsDataList = timed.map((x) => x.payload);
+
   return {
     exportedAt: new Date().toISOString(),
     page: input.page,
+    wsDataList,
     connections: order.map((group) => { group.frameCount = group.frames.length; return group; })
   };
 }
