@@ -17,13 +17,7 @@
         "targetPath": "/proxy/api/user",
         "targetUrl": "",
         "keepQuery": true,
-        "headers": [
-          {
-            "name": "X-Debug-Client",
-            "operation": "set",
-            "value": "local-dev"
-          }
-        ],
+        "headers": [],
         "mock": {
           "status": 200,
           "headers": [],
@@ -36,7 +30,7 @@
       "scope": {
         "resourceTypes": ["xmlhttprequest", "other"]
       },
-      "notes": "联调演示：用户中心接口转到测试网关，并附加调试标识",
+      "notes": "联调演示：用户中心接口转到测试网关",
       "meta": {}
     },
     {
@@ -112,7 +106,7 @@
     },
     {
       "id": "r-demo-4",
-      "name": "报表导出 · 自定义请求头",
+      "name": "报表导出 · 路径前缀替换",
       "enabled": true,
       "order": 3,
       "match": {
@@ -127,13 +121,7 @@
         "targetPath": "/proxy/api/report",
         "targetUrl": "",
         "keepQuery": true,
-        "headers": [
-          {
-            "name": "Authorization",
-            "operation": "set",
-            "value": "Bearer test-****"
-          }
-        ],
+        "headers": [],
         "mock": {
           "status": 200,
           "headers": [],
@@ -146,7 +134,7 @@
       "scope": {
         "resourceTypes": ["xmlhttprequest", "other"]
       },
-      "notes": "联调演示：为报表接口注入测试环境令牌（值已脱敏）",
+      "notes": "联调演示：报表接口转到测试网关",
       "meta": {}
     }
   ]

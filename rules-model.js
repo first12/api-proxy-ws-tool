@@ -279,6 +279,10 @@
     if (a.kind === "mock" && headers.length) {
       errors.push({ field: "headers", message: "Mock 请求不会发出，请求头不会生效；请改配到 Mock 响应头" });
     }
+    // 路径替换/完整 URL 均由 DNR redirect 实现，重定向产生的新请求不会再应用 modifyHeaders（E-01 实测）
+    if ((a.kind === "prefix" || a.kind === "url") && headers.length) {
+      errors.push({ field: "headers", message: "该类型通过重定向实现，浏览器不会给重定向后的请求追加请求头；请拆分规则或改用其他方式" });
+    }
     const seen = {};
     headers.forEach((h, i) => {
       const name = String(h.name || "").trim();
@@ -301,6 +305,10 @@
       }
       if (op === "append" && APPENDABLE_HEADERS.indexOf(lower) < 0) {
         errors.push({ field: "headers", message: name + " 不在 Chrome 的 append 白名单内，请改用 set" });
+      }
+      // E-03 实测：Cookie 的 set/remove 会被静默忽略，仅 append 生效
+      if (lower === "cookie" && op !== "append") {
+        errors.push({ field: "headers", message: "Chrome 不会应用 Cookie 的 set/remove，仅支持 append" });
       }
     });
 
