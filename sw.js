@@ -204,13 +204,18 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   }
   // MAIN world 注册注入失效时的降级：由 SW 直接向该标签页注入引擎（不受页面 CSP 限制）
   if (msg && msg.type === "mockInjectMain" && sender && sender.tab && sender.tab.id != null) {
+    console.log("[ProxyPlugin] 收到降级注入请求，tabId =", sender.tab.id);
     chrome.scripting.executeScript({
       target: { tabId: sender.tab.id },
       files: ["rules-model.js", "mock-inject.js"],
       world: "MAIN"
     }).then(
-      () => sendResponse({ ok: true }),
-      (err) => sendResponse({ ok: false, error: String(err && err.message ? err.message : err) })
+      () => { console.log("[ProxyPlugin] 降级注入成功"); sendResponse({ ok: true }); },
+      (err) => {
+        const m = String(err && err.message ? err.message : err);
+        console.error("[ProxyPlugin] 降级注入失败：", m);
+        sendResponse({ ok: false, error: m });
+      }
     );
     return true;
   }
