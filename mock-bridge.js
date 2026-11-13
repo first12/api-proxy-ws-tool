@@ -36,6 +36,9 @@
         if (chrome.runtime.lastError || !reply || reply.ok !== true) {
           try { console.warn("[MockBridge] SW 降级注入失败，改用 <script> 标签", (reply && reply.error) || (chrome.runtime.lastError && chrome.runtime.lastError.message)); } catch (e) {}
           injectViaScriptTag();
+        } else {
+          // 注入完成后再主动推一次配置，不依赖引擎 hello 的回环时序
+          setTimeout(reload, 100);
         }
       });
     } catch (e) {

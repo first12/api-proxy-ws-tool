@@ -6,7 +6,11 @@
 
   var RM = window.RuleModel;
   try { delete window.RuleModel; } catch (e) {}
-  if (!RM) return;
+  if (!RM) {
+    try { console.error("[Mock] 初始化失败：RuleModel 未加载（rules-model.js 注入顺序异常）"); } catch (e) {}
+    return;
+  }
+  try { console.info("[Mock] 引擎初始化完成，等待配置下发"); } catch (e) {}
 
   var SOURCE = "api-proxy-mock";
   var state = {
