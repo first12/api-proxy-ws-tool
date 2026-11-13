@@ -440,14 +440,31 @@ document.getElementById("connList").addEventListener("click", (e) => {
 document.getElementById("connSearch").addEventListener("input", (e) => {
   ui.q = e.target.value;
   ui.loaded = 20;
+  ensureSelectionVisible();
   renderConnList();
 });
 
 document.getElementById("hostSel").addEventListener("change", (e) => {
   ui.host = e.target.value;
   ui.loaded = 20;
+  ensureSelectionVisible();
   renderConnList();
 });
+
+// 当前选中连接不在筛选后的列表里时，自动选中第一条可见连接，避免右侧停留在不可见连接或空屏
+function ensureSelectionVisible() {
+  if (!selectedId) return;
+  if (filteredConns().some((c) => c.id === selectedId)) return;
+  const rows = filteredConns();
+  selectedId = rows.length ? rows[0].id : null;
+  ui.dir = "all";
+  ui.payloadQ = "";
+  document.getElementById("payloadSearch").value = "";
+  renderConnList();
+  renderMainHead();
+  renderDirChips();
+  rebuildFrames();
+}
 
 document.getElementById("connChips").addEventListener("click", (e) => {
   const chip = e.target.closest(".chip");
@@ -455,12 +472,14 @@ document.getElementById("connChips").addEventListener("click", (e) => {
   ui.st = chip.dataset.st;
   ui.loaded = 20;
   Array.from(document.querySelectorAll("#connChips .chip")).forEach((c) => c.classList.toggle("active", c === chip));
+  ensureSelectionVisible();
   renderConnList();
 });
 
 document.getElementById("onlyFrames").addEventListener("change", (e) => {
   ui.onlyFrames = e.target.checked;
   ui.loaded = 20;
+  ensureSelectionVisible();
   renderConnList();
 });
 
@@ -469,10 +488,30 @@ document.getElementById("loadMore").addEventListener("click", () => {
   renderConnList();
 });
 
+function connHasDir(id, dir) {
+  if (dir === "all") return connFrames(id).length > 0;
+  return connFrames(id).some((f) => f.direction === dir);
+}
+
+// 当前选中连接在 dir 方向下没有帧时，自动切到最近一个有该方向帧的连接，避免右侧空屏
+function ensureSelectionForDir() {
+  if (connHasDir(selectedId, ui.dir)) return;
+  const fallback = Array.from(connMeta.values())
+    .sort((a, b) => (b.openedAt || 0) - (a.openedAt || 0))
+    .find((c) => connHasDir(c.id, ui.dir));
+  if (fallback && fallback.id !== selectedId) {
+    selectedId = fallback.id; // 直接换选中，避免 selectConn 重置 dir 造成循环
+    renderConnList();
+    renderMainHead();
+  }
+}
+
 document.getElementById("dirChips").addEventListener("click", (e) => {
   const chip = e.target.closest(".dir-chip");
   if (!chip) return;
   ui.dir = chip.dataset.dir;
+  renderDirChips();
+  ensureSelectionForDir();
   renderDirChips();
   rebuildFrames();
 });
