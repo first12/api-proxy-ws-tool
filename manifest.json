@@ -3,7 +3,7 @@
   "name": "接口代理&WS抓包导出工具",
   "version": "0.7",
   "minimum_chrome_version": "102",
-  "description": "接口联调辅助工具：为调试环境统一请求指向，并在 DevTools 中查看 WebSocket 通信以定位联调问题",
+  "description": "接口联调辅助工具：域名级接口转发与本地 Mock、WebSocket 抓包导出 JSON，规则仅在已授权域名生效",
   "permissions": [
     "storage",
     "declarativeNetRequestWithHostAccess",
