@@ -125,8 +125,10 @@ function renderTable() {
     const pendingBtn = st.key === "pending"
       ? ' <button class="text grant" data-id="' + escapeHtml(rule.id) + '">授权此域名</button>'
       : "";
+    const nameText = rule.name || "";
     tr.innerHTML =
       '<td class="col-en"><button class="switch ' + (rule.enabled !== false ? "on" : "") + '" data-act="toggle" data-id="' + escapeHtml(rule.id) + '" aria-label="启用"></button></td>' +
+      '<td class="col-name" title="' + escapeHtml(nameText) + '"><span class="name' + (nameText ? "" : " none") + '">' + escapeHtml(nameText || "未命名") + '</span></td>' +
       '<td class="col-match" title="' + escapeHtml((rule.match.host || "") + (rule.match.path || "")) + '">' +
         '<span class="host">' + escapeHtml(rule.match.host) + '</span><span class="path">' + escapeHtml(rule.match.path) + '</span>' +
       '</td>' +

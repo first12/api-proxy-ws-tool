@@ -55,8 +55,10 @@ th{position:sticky;top:0;z-index:2;height:30px;background:var(--surface-2);borde
 td{height:42px;}
 tbody tr:hover{background:var(--surface-2);}
 tbody tr.selected{background:var(--accent-bg);}
-.col-en{width:64px;} .col-match{width:352px;} .col-type{width:150px;} .col-target{width:auto;}
-.col-status{width:140px;} .col-order{width:100px;} .col-act{width:96px;text-align:right;}
+.col-en{width:64px;} .col-name{width:140px;} .col-match{width:280px;} .col-type{width:140px;} .col-target{width:auto;}
+.col-status{width:170px;} .col-order{width:90px;} .col-act{width:96px;text-align:right;}
+.name{color:var(--ink);font-size:11.5px;}
+.name.none{color:var(--faint);}
 .mono{font-family:var(--mono);}
 .host{color:var(--faint);font-family:var(--mono);font-size:11px;}
 .path{color:var(--ink);font-family:var(--mono);font-size:11.5px;}
@@ -137,7 +139,7 @@ tbody tr.selected{background:var(--accent-bg);}
 </header>
 
 <div class="toolbar">
-  <input id="search" class="search" type="text" placeholder="搜索 host / 路径 / 目标">
+  <input id="search" class="search" type="text" placeholder="搜索名称 / host / 路径 / 目标">
   <button class="chip active" data-filter="all">全部 <span class="n" id="nAll">0</span></button>
   <button class="chip" data-filter="on">生效 <span class="n" id="nOn">0</span></button>
   <button class="chip" data-filter="off">已停用 <span class="n" id="nOff">0</span></button>
@@ -150,6 +152,7 @@ tbody tr.selected{background:var(--accent-bg);}
     <table>
       <thead><tr>
         <th class="col-en">启用</th>
+        <th class="col-name">名称</th>
         <th class="col-match">匹配地址</th>
         <th class="col-type">类型</th>
         <th class="col-target">重定向目标</th>
@@ -191,7 +194,7 @@ tbody tr.selected{background:var(--accent-bg);}
       <div class="field" data-field="scheme"><label>协议</label>
         <select id="fScheme"><option value="both">http + https</option><option value="https">仅 https</option><option value="http">仅 http</option></select>
       </div>
-      <div class="field" data-field="host"><label>host</label><input id="fHost" type="text" placeholder="10.114.0.11 / *.example.com"><div class="err"></div></div>
+      <div class="field" data-field="host"><label>host</label><input id="fHost" type="text" placeholder="192.168.1.100 / www.example.com"><div class="err"></div></div>
       <div class="field" data-field="path"><label>路径</label><input id="fPath" type="text" placeholder="/api/*"><div class="err"></div></div>
       <div class="checkline"><input id="fCase" type="checkbox" checked><label for="fCase" style="margin:0;">区分大小写</label></div>
     </div>
@@ -204,8 +207,8 @@ tbody tr.selected{background:var(--accent-bg);}
         <button data-kind="mock">Mock</button>
       </div>
       <div style="height:8px;"></div>
-      <div class="field" data-field="targetPath"><label>替换后前缀</label><input id="fTargetPath" type="text" placeholder="/test/api"><div class="err"></div></div>
-      <div class="field" data-field="targetUrl"><label>完整目标地址</label><input id="fTargetUrl" type="text" placeholder="https://staging.example.com/api"><div class="err"></div></div>
+      <div class="field" data-field="targetPath"><label>替换后前缀</label><input id="fTargetPath" type="text" placeholder="/proxy/api"><div class="err"></div></div>
+      <div class="field" data-field="targetUrl"><label>完整目标地址</label><input id="fTargetUrl" type="text" placeholder="https://example.com/api"><div class="err"></div></div>
       <div class="checkline"><input id="fKeepQuery" type="checkbox" checked><label for="fKeepQuery" style="margin:0;">保留原 query</label></div>
       <div id="mockWrap" style="display:none;">
         <div class="hint" style="font-size:10.5px;line-height:1.7;color:var(--muted);background:#F7F8F8;border-left:2px solid var(--accent);padding:7px 9px;margin-bottom:9px;">

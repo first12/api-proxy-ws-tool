@@ -189,9 +189,9 @@
 
   function validateHost(host) {
     const h = String(host || "").trim();
-    if (!h) return "host 不能为空，且不能包含协议或路径，例如 10.114.0.11";
+    if (!h) return "host 不能为空，且不能包含协议或路径，例如 192.168.1.100";
     if (/^(https?:)?\/\//i.test(h) || h.indexOf("/") >= 0 || h.indexOf(" ") >= 0) {
-      return "host 不能包含协议或路径，例如 10.114.0.11";
+      return "host 不能包含协议或路径，例如 192.168.1.100";
     }
     if (!/^(\*\.)?[a-z0-9.-]+$/.test(h.toLowerCase())) return "host 只允许字母、数字、. 和 -，左侧通配写法为 *.example.com";
     return null;
