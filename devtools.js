@@ -1,3 +1,3 @@
-chrome.devtools.panels.create("WS抓包", "", "devtools-panel.html", (panel) => {
-  console.log("WS抓包面板创建成功");
+chrome.devtools.panels.create("wsData", "", "devtools-panel.html", (panel) => {
+  console.log("wsData面板创建成功");
 });
