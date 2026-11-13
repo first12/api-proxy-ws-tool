@@ -1,0 +1,253 @@
+{
+  "exportedAt": "2026-11-13T12:28:58.309Z",
+  "page": "https://github.com/adongwanai/AgentGuide/blob/main/docs/05-roadmaps/learning-roadmap-development.md",
+  "wsDataList": [
+    {
+      "action": "SUBSCRIBE",
+      "topic": "order.status",
+      "session_id": "sess-demo-0001"
+    },
+    {
+      "action": "SUBSCRIBED",
+      "topic": "order.status",
+      "ok": true
+    },
+    {
+      "type": "join",
+      "room_id": "1001",
+      "user": "tester"
+    },
+    {
+      "type": "joined",
+      "online": 3
+    },
+    {
+      "type": "ping",
+      "seq": 1
+    },
+    {
+      "type": "pong",
+      "seq": 1,
+      "server_time": 1763034128000
+    },
+    {
+      "type": "msg",
+      "text": "联调测试消息"
+    },
+    {
+      "type": "msg",
+      "from": "support",
+      "text": "收到"
+    },
+    {
+      "type": "typing",
+      "from": "support"
+    },
+    {
+      "event": "order.updated",
+      "order_id": "ORD-20261113-0001",
+      "status": "PAID",
+      "amount": 128
+    }
+  ],
+  "connections": [
+    {
+      "id": "ws-1",
+      "url": "wss://api.example.com/ws/order?client_type=web",
+      "openedAt": "2026-11-13T11:42:03.000Z",
+      "closedAt": "2026-11-13T11:43:01.500Z",
+      "closeCode": 1000,
+      "truncated": false,
+      "frameCount": 5,
+      "frames": [
+        {
+          "direction": "open",
+          "timestamp": "2026-11-13T11:42:03.000Z",
+          "ts": 1794570123000,
+          "kind": "text",
+          "byteLength": 46,
+          "previewBase64": null,
+          "truncated": false,
+          "pending": false,
+          "payload": "wss://api.example.com/ws/order?client_type=web"
+        },
+        {
+          "direction": "out",
+          "timestamp": "2026-11-13T11:42:03.110Z",
+          "ts": 1794570123110,
+          "kind": "text",
+          "byteLength": 75,
+          "previewBase64": null,
+          "truncated": false,
+          "pending": false,
+          "payload": "{\"action\":\"SUBSCRIBE\",\"topic\":\"order.status\",\"session_id\":\"sess-demo-0001\"}"
+        },
+        {
+          "direction": "in",
+          "timestamp": "2026-11-13T11:42:03.340Z",
+          "ts": 1794570123340,
+          "kind": "text",
+          "byteLength": 56,
+          "previewBase64": null,
+          "truncated": false,
+          "pending": false,
+          "payload": "{\"action\":\"SUBSCRIBED\",\"topic\":\"order.status\",\"ok\":true}"
+        },
+        {
+          "direction": "in",
+          "timestamp": "2026-11-13T11:42:18.020Z",
+          "ts": 1794570138020,
+          "kind": "text",
+          "byteLength": 88,
+          "previewBase64": null,
+          "truncated": false,
+          "pending": false,
+          "payload": "{\"event\":\"order.updated\",\"order_id\":\"ORD-20261113-0001\",\"status\":\"PAID\",\"amount\":128.00}"
+        },
+        {
+          "direction": "close",
+          "timestamp": "2026-11-13T11:43:01.500Z",
+          "ts": 1794570181500,
+          "kind": "text",
+          "byteLength": 9,
+          "previewBase64": null,
+          "truncated": false,
+          "pending": false,
+          "payload": "code=1000"
+        }
+      ]
+    },
+    {
+      "id": "ws-2",
+      "url": "wss://api.example.com/ws/chat?room_id=1001",
+      "openedAt": "2026-11-13T11:42:05.400Z",
+      "closedAt": null,
+      "closeCode": null,
+      "truncated": false,
+      "frameCount": 6,
+      "frames": [
+        {
+          "direction": "open",
+          "timestamp": "2026-11-13T11:42:05.400Z",
+          "ts": 1794570125400,
+          "kind": "text",
+          "byteLength": 42,
+          "previewBase64": null,
+          "truncated": false,
+          "pending": false,
+          "payload": "wss://api.example.com/ws/chat?room_id=1001"
+        },
+        {
+          "direction": "out",
+          "timestamp": "2026-11-13T11:42:05.520Z",
+          "ts": 1794570125520,
+          "kind": "text",
+          "byteLength": 48,
+          "previewBase64": null,
+          "truncated": false,
+          "pending": false,
+          "payload": "{\"type\":\"join\",\"room_id\":\"1001\",\"user\":\"tester\"}"
+        },
+        {
+          "direction": "in",
+          "timestamp": "2026-11-13T11:42:05.680Z",
+          "ts": 1794570125680,
+          "kind": "text",
+          "byteLength": 28,
+          "previewBase64": null,
+          "truncated": false,
+          "pending": false,
+          "payload": "{\"type\":\"joined\",\"online\":3}"
+        },
+        {
+          "direction": "out",
+          "timestamp": "2026-11-13T11:42:09.100Z",
+          "ts": 1794570129100,
+          "kind": "text",
+          "byteLength": 42,
+          "previewBase64": null,
+          "truncated": false,
+          "pending": false,
+          "payload": "{\"type\":\"msg\",\"text\":\"联调测试消息\"}"
+        },
+        {
+          "direction": "in",
+          "timestamp": "2026-11-13T11:42:09.420Z",
+          "ts": 1794570129420,
+          "kind": "text",
+          "byteLength": 47,
+          "previewBase64": null,
+          "truncated": false,
+          "pending": false,
+          "payload": "{\"type\":\"msg\",\"from\":\"support\",\"text\":\"收到\"}"
+        },
+        {
+          "direction": "in",
+          "timestamp": "2026-11-13T11:42:15.800Z",
+          "ts": 1794570135800,
+          "kind": "text",
+          "byteLength": 34,
+          "previewBase64": null,
+          "truncated": false,
+          "pending": false,
+          "payload": "{\"type\":\"typing\",\"from\":\"support\"}"
+        }
+      ]
+    },
+    {
+      "id": "ws-3",
+      "url": "wss://192.168.1.100:8080/ws/notify",
+      "openedAt": "2026-11-13T11:42:07.900Z",
+      "closedAt": null,
+      "closeCode": null,
+      "truncated": false,
+      "frameCount": 4,
+      "frames": [
+        {
+          "direction": "open",
+          "timestamp": "2026-11-13T11:42:07.900Z",
+          "ts": 1794570127900,
+          "kind": "text",
+          "byteLength": 34,
+          "previewBase64": null,
+          "truncated": false,
+          "pending": false,
+          "payload": "wss://192.168.1.100:8080/ws/notify"
+        },
+        {
+          "direction": "out",
+          "timestamp": "2026-11-13T11:42:08.100Z",
+          "ts": 1794570128100,
+          "kind": "text",
+          "byteLength": 23,
+          "previewBase64": null,
+          "truncated": false,
+          "pending": false,
+          "payload": "{\"type\":\"ping\",\"seq\":1}"
+        },
+        {
+          "direction": "in",
+          "timestamp": "2026-11-13T11:42:08.320Z",
+          "ts": 1794570128320,
+          "kind": "text",
+          "byteLength": 51,
+          "previewBase64": null,
+          "truncated": false,
+          "pending": false,
+          "payload": "{\"type\":\"pong\",\"seq\":1,\"server_time\":1763034128000}"
+        },
+        {
+          "direction": "in",
+          "timestamp": "2026-11-13T11:42:12.800Z",
+          "ts": 1794570132800,
+          "kind": "binary",
+          "byteLength": 128,
+          "previewBase64": "AAECAwQFBgcICQoLDA0ODw==",
+          "truncated": false,
+          "pending": false,
+          "payload": ""
+        }
+      ]
+    }
+  ]
+}

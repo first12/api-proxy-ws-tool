@@ -1,0 +1,153 @@
+{
+  "proxyRules": [
+    {
+      "id": "r-demo-1",
+      "name": "用户中心 · 路径前缀替换",
+      "enabled": true,
+      "order": 0,
+      "match": {
+        "scheme": "both",
+        "host": "api.example.com",
+        "path": "/api/user/*",
+        "caseSensitive": true,
+        "excludeHosts": []
+      },
+      "action": {
+        "kind": "prefix",
+        "targetPath": "/proxy/api/user",
+        "targetUrl": "",
+        "keepQuery": true,
+        "headers": [
+          {
+            "name": "X-Debug-Client",
+            "operation": "set",
+            "value": "local-dev"
+          }
+        ],
+        "mock": {
+          "status": 200,
+          "headers": [],
+          "bodyType": "json",
+          "contentType": "application/json",
+          "body": "{}",
+          "delayMs": 0
+        }
+      },
+      "scope": {
+        "resourceTypes": ["xmlhttprequest", "other"]
+      },
+      "notes": "联调演示：用户中心接口转到测试网关，并附加调试标识",
+      "meta": {}
+    },
+    {
+      "id": "r-demo-2",
+      "name": "订单详情 · 完整 URL 重定向",
+      "enabled": true,
+      "order": 1,
+      "match": {
+        "scheme": "both",
+        "host": "api.example.com",
+        "path": "/api/order/*",
+        "caseSensitive": true,
+        "excludeHosts": []
+      },
+      "action": {
+        "kind": "url",
+        "targetPath": "",
+        "targetUrl": "https://test-api.example.com/api/order",
+        "keepQuery": true,
+        "headers": [],
+        "mock": {
+          "status": 200,
+          "headers": [],
+          "bodyType": "json",
+          "contentType": "application/json",
+          "body": "{}",
+          "delayMs": 0
+        }
+      },
+      "scope": {
+        "resourceTypes": ["xmlhttprequest", "other"]
+      },
+      "notes": "联调演示：订单接口整条重定向到测试环境",
+      "meta": {}
+    },
+    {
+      "id": "r-demo-3",
+      "name": "配置中心 · Mock 本地响应",
+      "enabled": true,
+      "order": 2,
+      "match": {
+        "scheme": "both",
+        "host": "192.168.1.100",
+        "path": "/api/config",
+        "caseSensitive": true,
+        "excludeHosts": []
+      },
+      "action": {
+        "kind": "mock",
+        "targetPath": "",
+        "targetUrl": "",
+        "keepQuery": true,
+        "headers": [],
+        "mock": {
+          "status": 200,
+          "headers": [
+            {
+              "name": "X-Mock-Source",
+              "value": "local"
+            }
+          ],
+          "bodyType": "json",
+          "contentType": "application/json",
+          "body": "{\n  \"featureToggle\": true,\n  \"env\": \"test\"\n}",
+          "delayMs": 300
+        }
+      },
+      "scope": {
+        "resourceTypes": ["xmlhttprequest", "other"]
+      },
+      "notes": "联调演示：配置接口未就绪时，由页面内 Mock 返回固定响应",
+      "meta": {}
+    },
+    {
+      "id": "r-demo-4",
+      "name": "报表导出 · 自定义请求头",
+      "enabled": true,
+      "order": 3,
+      "match": {
+        "scheme": "both",
+        "host": "admin.example.com",
+        "path": "/api/report/*",
+        "caseSensitive": true,
+        "excludeHosts": []
+      },
+      "action": {
+        "kind": "prefix",
+        "targetPath": "/proxy/api/report",
+        "targetUrl": "",
+        "keepQuery": true,
+        "headers": [
+          {
+            "name": "Authorization",
+            "operation": "set",
+            "value": "Bearer test-****"
+          }
+        ],
+        "mock": {
+          "status": 200,
+          "headers": [],
+          "bodyType": "json",
+          "contentType": "application/json",
+          "body": "{}",
+          "delayMs": 0
+        }
+      },
+      "scope": {
+        "resourceTypes": ["xmlhttprequest", "other"]
+      },
+      "notes": "联调演示：为报表接口注入测试环境令牌（值已脱敏）",
+      "meta": {}
+    }
+  ]
+}
