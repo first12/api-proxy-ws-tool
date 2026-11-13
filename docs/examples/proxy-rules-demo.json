@@ -136,6 +136,45 @@
       },
       "notes": "联调演示：报表接口转到测试网关",
       "meta": {}
+    },
+    {
+      "id": "r-demo-5",
+      "name": "个人资料 · 调试请求头",
+      "enabled": true,
+      "order": 4,
+      "match": {
+        "scheme": "both",
+        "host": "api.example.com",
+        "path": "/api/profile/*",
+        "caseSensitive": true,
+        "excludeHosts": []
+      },
+      "action": {
+        "kind": "headers",
+        "targetPath": "",
+        "targetUrl": "",
+        "keepQuery": true,
+        "headers": [
+          {
+            "name": "X-Debug-Client",
+            "operation": "set",
+            "value": "local-dev"
+          }
+        ],
+        "mock": {
+          "status": 200,
+          "headers": [],
+          "bodyType": "json",
+          "contentType": "application/json",
+          "body": "{}",
+          "delayMs": 0
+        }
+      },
+      "scope": {
+        "resourceTypes": ["xmlhttprequest", "other"]
+      },
+      "notes": "联调演示：仅追加调试请求头，不改变请求地址",
+      "meta": {}
     }
   ]
 }

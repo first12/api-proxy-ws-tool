@@ -283,6 +283,9 @@
     if ((a.kind === "prefix" || a.kind === "url") && headers.length) {
       errors.push({ field: "headers", message: "该类型通过重定向实现，浏览器不会给重定向后的请求追加请求头；请拆分规则或改用其他方式" });
     }
+    if (a.kind === "headers" && !headers.length) {
+      errors.push({ field: "headers", message: "「仅请求头」类型至少需要配置一条请求头" });
+    }
     const seen = {};
     headers.forEach((h, i) => {
       const name = String(h.name || "").trim();
@@ -389,7 +392,9 @@
     const priority = 1000000 - index * 10;
     const dnr = [];
 
-    if (a.kind === "url") {
+    if (a.kind === "headers") {
+      // 仅改请求头：不生成 redirect，避免重定向吞掉 modifyHeaders（E-01）
+    } else if (a.kind === "url") {
       dnr.push({
         id: 1000 + index,
         priority,

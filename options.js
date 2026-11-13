@@ -70,6 +70,7 @@ function ruleState(rule) {
 function targetText(rule) {
   const a = rule.action || {};
   if (a.kind === "mock") return "Mock " + ((a.mock && a.mock.status) || 200);
+  if (a.kind === "headers") return (Array.isArray(a.headers) ? a.headers.length : 0) + " 个请求头";
   if (a.kind === "url") return a.targetUrl || "未设置";
   return a.targetPath || "未设置";
 }
@@ -120,8 +121,9 @@ function renderTable() {
     const st = ruleState(rule);
     const tr = document.createElement("tr");
     if (state.editingId === rule.id) tr.className = "selected";
-    const typeText = rule.action.kind === "mock" ? "Mock" : "转发";
-    const subText = rule.action.kind === "mock" ? "本地响应" : (rule.action.kind === "url" ? "完整 URL" : "路径替换");
+    const kind = rule.action.kind;
+    const typeText = kind === "mock" ? "Mock" : kind === "headers" ? "请求头" : "转发";
+    const subText = kind === "mock" ? "本地响应" : kind === "url" ? "完整 URL" : kind === "headers" ? "仅改请求头" : "路径替换";
     const pendingBtn = st.key === "pending"
       ? ' <button class="text grant" data-id="' + escapeHtml(rule.id) + '">授权此域名</button>'
       : "";
@@ -341,7 +343,7 @@ function updateKindUi() {
   $("#headerGroup").style.display = kind === "mock" ? "none" : "block";
   $('[data-field="targetPath"]').style.display = kind === "prefix" ? "block" : "none";
   $('[data-field="targetUrl"]').style.display = kind === "url" ? "block" : "none";
-  $("#fKeepQuery").closest(".checkline").style.display = kind === "url" ? "flex" : "flex";
+  $("#fKeepQuery").closest(".checkline").style.display = (kind === "mock" || kind === "headers") ? "none" : "flex";
   syncMockBodyUi();
 }
 
@@ -366,8 +368,9 @@ function updateSummary() {
     box.textContent = "Mock 不生成 DNR 规则：保存后在已授权的页面上由 fetch/XHR 拦截器返回伪造响应（延迟 " +
       ((state.draft.action.mock && state.draft.action.mock.delayMs) || 0) + " ms）；仅覆盖页面脚本请求。";
   } else if (compiled.rules.length) {
+    const onlyHeaders = state.draft.action.kind === "headers";
     box.textContent = "将生成 " + compiled.rules.length + " 条 DNR 规则" +
-      (compiled.rules.length > 1 ? "（转发 1 条 + 请求头 1 条）" : "（转发）") +
+      (onlyHeaders ? "（仅请求头）" : compiled.rules.length > 1 ? "（转发 1 条 + 请求头 1 条）" : "（转发）") +
       "，优先级 P" + (Number(state.draft.order) + 1) + "。";
   } else {
     box.textContent = "当前配置不会生成 DNR 规则。";
