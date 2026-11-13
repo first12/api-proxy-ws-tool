@@ -20,6 +20,7 @@
     } catch (e) {
       table = [];
     }
+    try { console.info("[MockBridge] 下发配置：mock 规则 " + table.length + " 条", table.map(function (r) { return (r.name || r.id) + " " + r.match.host + r.match.path; })); } catch (e) {}
     window.postMessage({ __mockSource: SOURCE, type: "config", enabled: table.length > 0, table: table }, "*");
   }
 
@@ -29,6 +30,7 @@
   function injectMainFallback() {
     if (fallbackTried || mainAlive) return;
     fallbackTried = true;
+    try { console.warn("[MockBridge] MAIN 引擎未就绪，降级为 <script> 标签注入"); } catch (e) {}
     function append(src, onload) {
       var s = document.createElement("script");
       s.src = src;
@@ -75,12 +77,14 @@
   window.addEventListener("message", function (event) {
     if (event.source !== window || !event.data || event.data.__mockSource !== SOURCE) return;
     if (event.data.type === "hello") {
+      try { console.info("[MockBridge] MAIN 引擎已就绪"); } catch (e) {}
       mainAlive = true;
       reload();
     }
   });
 
   // 脚本在 document_start 运行，页面可能还没准备好监听；postMessage 由 MAIN world 的监听器异步接收
+  try { console.info("[MockBridge] 桥接已加载", location.href); } catch (e) {}
   reload();
   // 给 MAIN world 注册注入一个短暂的确认窗口，未就绪则走 <script> 降级注入
   setTimeout(injectMainFallback, 500);
