@@ -7,8 +7,61 @@
   var RM = window.RuleModel;
   try { delete window.RuleModel; } catch (e) {}
   if (!RM) {
-    try { console.error("[Mock] 初始化失败：RuleModel 未加载（rules-model.js 注入顺序异常）"); } catch (e) {}
-    return;
+    // 引擎只依赖匹配逻辑，且收到的表已由桥接构建好；内置一份避免对 rules-model.js 注入顺序的依赖
+    try { console.warn("[Mock] RuleModel 未加载，使用内置匹配逻辑"); } catch (e) {}
+    RM = (function () {
+      function normalizeHost(host) {
+        return String(host || "").trim().toLowerCase()
+          .replace(/^https?:\/\//, "")
+          .replace(/\/.*$/, "")
+          .replace(/:\d+$/, "");
+      }
+      function hostMatches(ruleHost, host) {
+        var target = normalizeHost(ruleHost);
+        if (!target) return false;
+        var h = String(host || "").toLowerCase();
+        if (target.indexOf("*.") === 0) {
+          var suffix = target.slice(2);
+          if (h === suffix) return false;
+          if (h.slice(-(suffix.length + 1)) !== "." + suffix) return false;
+          return /^[a-z0-9-]+$/.test(h.slice(0, -(suffix.length + 1)));
+        }
+        return h === target;
+      }
+      function pathMatches(pattern, pathname, caseSensitive) {
+        var p = String(pattern || "");
+        if (!p) return false;
+        var hay = caseSensitive === false ? String(pathname).toLowerCase() : String(pathname);
+        if (p.slice(-1) === "*") {
+          var base = p.slice(0, -1).replace(/\/$/, "");
+          var needle = caseSensitive === false ? base.toLowerCase() : base;
+          return hay.indexOf(needle) === 0;
+        }
+        return hay === (caseSensitive === false ? p.toLowerCase() : p);
+      }
+      function matchRule(rule, url) {
+        if (!rule || rule.enabled === false) return false;
+        var m = rule.match || {};
+        if (!m.host) return false;
+        var u;
+        try { u = new URL(String(url), location.href); } catch (e) { return false; }
+        var scheme = u.protocol.replace(":", "");
+        if (scheme !== "http" && scheme !== "https") return false;
+        if (m.scheme && m.scheme !== "both" && m.scheme !== scheme) return false;
+        if (!hostMatches(m.host, u.hostname)) return false;
+        if (Array.isArray(m.excludeHosts) && m.excludeHosts.some(function (h) { return hostMatches(h, u.hostname); })) return false;
+        return pathMatches(m.path, u.pathname, m.caseSensitive !== false);
+      }
+      function selectMockRule(url, table) {
+        var list = Array.isArray(table) ? table : [];
+        for (var i = 0; i < list.length; i++) {
+          var rule = list[i];
+          if (rule && rule.match && rule.response && matchRule(rule, url)) return rule;
+        }
+        return null;
+      }
+      return { hostMatches: hostMatches, pathMatches: pathMatches, matchRule: matchRule, selectMockRule: selectMockRule };
+    })();
   }
   try { console.info("[Mock] 引擎初始化完成，等待配置下发"); } catch (e) {}
 
