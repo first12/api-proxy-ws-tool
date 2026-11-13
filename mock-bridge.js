@@ -25,12 +25,25 @@
   }
 
   // 已知 Chromium 问题：registerContentScripts 注册的 world:"MAIN" 脚本可能"注册成功但不注入"。
-  // 桥接脚本运行后短暂等待引擎的 hello；没等到就通过 <script> 标签把引擎补注入 MAIN world
-  // （rules-model.js / mock-inject.js 均已在 web_accessible_resources 中）。
+  // 降级路径：优先让 SW 用 chrome.scripting.executeScript(world:MAIN) 注入（不受页面 CSP 限制）；
+  // SW 不可达时再用 <script> 标签兜底（可能被页面 CSP 拦截）。
   function injectMainFallback() {
     if (fallbackTried || mainAlive) return;
     fallbackTried = true;
-    try { console.warn("[MockBridge] MAIN 引擎未就绪，降级为 <script> 标签注入"); } catch (e) {}
+    try { console.warn("[MockBridge] MAIN 引擎未就绪，请求 SW 执行降级注入"); } catch (e) {}
+    try {
+      chrome.runtime.sendMessage({ type: "mockInjectMain" }, function (reply) {
+        if (chrome.runtime.lastError || !reply || reply.ok !== true) {
+          try { console.warn("[MockBridge] SW 降级注入失败，改用 <script> 标签", (reply && reply.error) || (chrome.runtime.lastError && chrome.runtime.lastError.message)); } catch (e) {}
+          injectViaScriptTag();
+        }
+      });
+    } catch (e) {
+      injectViaScriptTag();
+    }
+  }
+
+  function injectViaScriptTag() {
     function append(src, onload) {
       var s = document.createElement("script");
       s.src = src;

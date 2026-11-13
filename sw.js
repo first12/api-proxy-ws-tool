@@ -202,6 +202,18 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
       .catch(() => sendResponse({ granted: true }));
     return true;
   }
+  // MAIN world 注册注入失效时的降级：由 SW 直接向该标签页注入引擎（不受页面 CSP 限制）
+  if (msg && msg.type === "mockInjectMain" && sender && sender.tab && sender.tab.id != null) {
+    chrome.scripting.executeScript({
+      target: { tabId: sender.tab.id },
+      files: ["rules-model.js", "mock-inject.js"],
+      world: "MAIN"
+    }).then(
+      () => sendResponse({ ok: true }),
+      (err) => sendResponse({ ok: false, error: String(err && err.message ? err.message : err) })
+    );
+    return true;
+  }
   return false;
 });
 
