@@ -615,12 +615,24 @@ function buildExport(input) {
     });
   });
 
-  // wsDataList：按时间顺序平铺所有收发（in/out）的文本帧 payload，便于下游直接消费消息数据
+  // wsDataList：按时间顺序平铺所有收发（in/out）的文本帧 payload，便于下游直接消费消息数据。
+  // payload 是合法 JSON 时自动解析为对象/数组，解析失败（纯文本/半截帧）保留原字符串。
+  function parsePayload(text) {
+    if (typeof text !== "string") return text;
+    const s = text.trim();
+    if (s.length < 2 || (s[0] !== "{" && s[0] !== "[")) return text;
+    try {
+      const parsed = JSON.parse(s);
+      return parsed && typeof parsed === "object" ? parsed : text;
+    } catch (e) {
+      return text;
+    }
+  }
   const timed = [];
   order.forEach((group) => {
     group.frames.forEach((f) => {
       if ((f.direction === "in" || f.direction === "out") && f.kind === "text") {
-        timed.push({ ts: f.ts, payload: f.payload });
+        timed.push({ ts: f.ts, payload: parsePayload(f.payload) });
       }
     });
   });
