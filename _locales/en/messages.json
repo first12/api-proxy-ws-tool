@@ -1,0 +1,10 @@
+{
+  "extName": {
+    "message": "API Proxy & WS Capture Tool",
+    "description": "Extension name shown in the toolbar and store listing"
+  },
+  "extDescription": {
+    "message": "Forward APIs to local/test hosts, mock responses, and export WebSocket frames as JSON. Rules apply only to authorized domains.",
+    "description": "Store listing summary, 132 characters max"
+  }
+}

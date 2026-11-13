@@ -45,6 +45,8 @@ FILES=(
   "rules-model.js"
   "mock-inject.js"
   "mock-bridge.js"
+  "_locales/zh_CN/messages.json"
+  "_locales/en/messages.json"
   "icons/icon16.png"
   "icons/icon32.png"
   "icons/icon48.png"

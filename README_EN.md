@@ -1,20 +1,28 @@
 # API Proxy & WebSocket Capture Tool (api-proxy-ws-tool)
 
-A Chrome (Manifest V3) browser extension for frontend development, QA, and API debugging, providing two major capabilities:
+A Chrome (Manifest V3) browser extension for frontend development, QA, and API debugging, providing three capabilities:
 
-1. **HTTP API Proxy**: Match requests by "host + path" and redirect them to a test environment or any other address (powered by `declarativeNetRequest`).
-2. **WebSocket Capture & Export**: Capture all WebSocket traffic of the inspected page via a DevTools panel, display it grouped by connection in real time, and export it as structured JSON.
+1. **HTTP API Forwarding**: Match requests by "host + path" and forward them to a test environment or any other address (powered by `declarativeNetRequest`).
+2. **Local Mock Responses**: Return a custom status code, headers and JSON body for endpoints that are not ready yet, with an optional delay.
+3. **WebSocket Capture & Export**: Capture all WebSocket traffic of the inspected page via a DevTools panel, display it grouped by connection in real time, and export it as structured JSON.
 
 [中文文档](./README.md)
 
 ## Features
 
-- **HTTP Request Proxy**
+- **HTTP Request Forwarding**
   - Rule dimensions: host + API path (supports `*` wildcards)
-  - Two redirect modes:
+  - Four rule types:
     - **Path Replace**: rewrite only the URL path, query string is preserved automatically (recommended)
     - **Full Target URL**: redirect the entire request to a given address
+    - **Local Mock**: skip the real request and return a custom status code, headers and JSON body, with an optional delay
+    - **Headers Only**: keep the request address unchanged and only add / modify / remove request headers
+  - **Domain authorization**: a rule takes effect only after its domain is authorized. Unauthorized rules show as "Pending authorization" and the permission can be revoked at any time
   - Rules can be enabled / disabled / deleted at any time; configuration is stored locally (`chrome.storage.local`)
+- **Request Header Editing**
+  - Supports `set` / `append` / `remove`
+  - Headers the browser refuses to modify (such as `host`, `content-length`, `origin`) and `cookie` with `set` / `remove` are rejected at compile time
+  - Headers must be configured with the "Headers Only" type: forwarding rules are implemented as redirects, and the browser does not apply header rules to the redirected request, so combining both is blocked on save
 - **WebSocket Capture (DevTools Panel)**
   - Captures `open` / `close` / incoming (`in`) / outgoing (`out`) events of every WS connection on the page
   - Frames are grouped by connection instance (multiple concurrent connections to the same URL are listed separately)
@@ -29,6 +37,8 @@ A Chrome (Manifest V3) browser extension for frontend development, QA, and API d
 
    ```bash
    git clone https://gitee.com/first12/api-proxy-ws-tool.git
+   # or
+   git clone https://github.com/first12/api-proxy-ws-tool.git
    ```
 
 2. Open Chrome and go to `chrome://extensions/`
@@ -38,17 +48,26 @@ A Chrome (Manifest V3) browser extension for frontend development, QA, and API d
 
 ## Usage
 
-### HTTP API Proxy
+### Authorize a domain
 
-1. Click the extension icon in the browser toolbar to open the configuration popup
+Rules only apply to authorized domains. After the first rule for a domain is added, the list shows "Pending authorization":
+
+1. Click **Authorize this domain**; the browser shows a host permission prompt — choose **Allow**
+2. The rule status changes to "Active" (mock rules show "Mock active")
+3. If you deny the prompt, the rule stays pending and you can retry later; the permission can also be revoked from the extension details page at any time
+
+### HTTP API Forwarding
+
+1. Click the extension icon in the browser toolbar to open the configuration popup, or open the options page from the extension details page for the full configuration UI
 2. Fill in a rule:
    - **Host**: e.g. `192.168.1.100` or `www.example.com`
    - **API path**: e.g. `/api/user/list`, wildcards like `/api/*` are supported
-   - **Type**: choose "Proxy"
-   - **Redirect mode**:
-     - Path Replace: enter the new path, e.g. `/proxy/api/user/list`
-     - Full Target URL: enter the complete target, e.g. `https://example.com/api/user/list?a=1`
-3. Click **Add rule** — it takes effect immediately (saved rules are synced into browser dynamic redirect rules automatically)
+   - **Type**, one of four:
+     - **Path Replace**: enter the new path, e.g. `/proxy/api/user/list`
+     - **Full Target URL**: enter the complete target, e.g. `https://example.com/api/user/list?a=1`
+     - **Local Mock**: enter the status code, headers and JSON body, with an optional delay
+     - **Headers Only**: enter the headers to set / append / remove without changing the request address
+3. Click **Add rule** and authorize the domain — it takes effect immediately (saved rules are synced into browser dynamic redirect rules automatically)
 
 ### WebSocket Capture & Export
 
@@ -105,13 +124,17 @@ A complete desensitized sample lives in [docs/examples/ws-export-sample.json](do
 ├── mock-inject.js         # MAIN-world mock engine: intercepts page fetch / XHR
 ├── devtools.html / devtools.js        # DevTools entry, registers the wsData panel
 ├── devtools-panel.html / devtools-panel.js  # Panel UI: polling display, clear, export
-└── ws-hook-source.js      # WebSocket hook source injected into the page (main world)
+├── ws-hook-source.js      # WebSocket hook source injected into the page (main world)
+├── privacy.html           # Privacy policy page (hosted on GitHub Pages)
+├── _locales/              # i18n resources (zh_CN, en) for name and description
+└── docs/examples/         # Desensitized sample data (rules and WS exports)
 ```
 
 ## Known Limitations
 
-- **Mock covers page-script requests only**: mock works by intercepting `fetch` / `XMLHttpRequest` inside the page, so it applies to requests issued by page JavaScript; document navigation and `<img>` / `<script>` resource requests bypass mock (use a "Proxy" rule for those). Response bodies are user-supplied and must match the business shape your app expects.
+- **Mock covers page-script requests only**: mock works by intercepting `fetch` / `XMLHttpRequest` inside the page, so it applies to requests issued by page JavaScript; document navigation and `<img>` / `<script>` resource requests bypass mock (use a forwarding rule for those). Response bodies are user-supplied and must match the business shape your app expects.
 - **WebSocket is read-only**: the WS panel is for viewing and exporting only; it cannot modify or forward WebSocket messages (browser extensions cannot hijack WS in the background).
+- **Request headers cannot be combined with forwarding**: the browser does not apply header rules to requests produced by a redirect, so create a separate "Headers Only" rule instead; `cookie` supports `append` only, and sensitive headers such as `host` / `content-length` / `origin` cannot be modified.
 - WS connections established before the hook is injected cannot be captured (reload the page to reconnect).
 
 ## Open Source Edition Notes
@@ -119,8 +142,8 @@ A complete desensitized sample lives in [docs/examples/ws-export-sample.json](do
 - **Version**: v0.7 (open-source community edition)
 - **License**: [MIT License](./LICENSE) — anyone may freely use, modify, and distribute this project, provided the copyright notice is retained.
 - **Upgrading**: the extension is pure frontend code (vanilla HTML / CSS / JS) with no build step — pull the latest code and click "Reload" on `chrome://extensions/` to upgrade.
-- **Feedback & Contribution**: issues and pull requests are welcome via the Gitee repository.
-- **Privacy**: the extension uploads nothing. Proxy rules are stored in local `chrome.storage.local`; captured WS data lives only in the inspected page's memory and in your locally exported files.
+- **Feedback & Contribution**: issues and pull requests are welcome via [Gitee](https://gitee.com/first12/api-proxy-ws-tool/issues) or [GitHub](https://github.com/first12/api-proxy-ws-tool/issues).
+- **Privacy**: the extension uploads nothing. Proxy rules are stored in local `chrome.storage.local`; captured WS data lives only in the inspected page's memory and in your locally exported files. See the full policy at [privacy.html](https://first12.github.io/api-proxy-ws-tool/privacy.html).
 
 ## License
 

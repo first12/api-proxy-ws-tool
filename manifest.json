@@ -1,9 +1,10 @@
 {
   "manifest_version": 3,
-  "name": "接口代理&WS抓包导出工具",
+  "name": "__MSG_extName__",
   "version": "0.7",
   "minimum_chrome_version": "102",
-  "description": "接口联调辅助工具：域名级接口转发与本地 Mock、WebSocket 抓包导出 JSON，规则仅在已授权域名生效",
+  "description": "__MSG_extDescription__",
+  "default_locale": "zh_CN",
   "permissions": [
     "storage",
     "declarativeNetRequestWithHostAccess",

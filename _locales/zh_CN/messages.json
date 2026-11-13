@@ -1,0 +1,10 @@
+{
+  "extName": {
+    "message": "接口代理&WS抓包导出工具",
+    "description": "扩展名称（工具栏与商店展示）"
+  },
+  "extDescription": {
+    "message": "接口联调辅助工具：域名级接口转发与本地 Mock、WebSocket 抓包导出 JSON，规则仅在已授权域名生效",
+    "description": "扩展简介（商店展示，上限 132 字符）"
+  }
+}
