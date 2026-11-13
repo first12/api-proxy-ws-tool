@@ -6,6 +6,12 @@
 
   var RM = window.RuleModel;
   try { delete window.RuleModel; } catch (e) {}
+  // 调试日志开关：代码配置（置 true 输出命中/配置日志），也可由页面临时 window.__MOCK_DEBUG__ = true 打开
+  var DEBUG = window.__MOCK_DEBUG__ === true;
+  function dlog() {
+    if (!DEBUG) return;
+    try { console.info.apply(console, ["[Mock]"].concat([].slice.call(arguments))); } catch (e) {}
+  }
   if (!RM) {
     // 引擎只依赖匹配逻辑，且收到的表已由桥接构建好；内置一份避免对 rules-model.js 注入顺序的依赖
     try { console.warn("[Mock] RuleModel 未加载，使用内置匹配逻辑"); } catch (e) {}
@@ -63,7 +69,7 @@
       return { hostMatches: hostMatches, pathMatches: pathMatches, matchRule: matchRule, selectMockRule: selectMockRule };
     })();
   }
-  try { console.info("[Mock] 引擎初始化完成，等待配置下发"); } catch (e) {}
+  dlog("引擎初始化完成，等待配置下发");
 
   var SOURCE = "api-proxy-mock";
   var state = {
@@ -149,8 +155,8 @@
     var url = urlOf(input);
     var rule = RM.selectMockRule(url, state.table);
     if (!rule) return state.origFetch.apply(this, arguments);
-    try { console.info("[Mock] fetch 命中规则", rule.id, rule.name, url); } catch (e) {}
-    try { console.info("[Mock] 返回 mock 数据 → " + rule.response.status + " " + (rule.response.contentType || ""), rule.response.bodyType === "empty" ? "(空 body)" : preview(rule.response.body)); } catch (e) {}
+    dlog("fetch 命中规则", rule.id, rule.name, url);
+    dlog("返回 mock 数据 → " + rule.response.status + " " + (rule.response.contentType || ""), rule.response.bodyType === "empty" ? "(空 body)" : preview(rule.response.body));
     var signal = (init && init.signal) || (input && typeof input === "object" && input.signal) || null;
     return respond(url, rule.response, signal);
   }
@@ -274,8 +280,8 @@
       var savedSend = state.xhrSaved && state.xhrSaved.send;
       return (savedSend ? savedSend.fn : this.send).apply(this, arguments);
     }
-    try { console.info("[Mock] XHR 命中规则", rule.id, rule.name, info.method, info.url); } catch (e) {}
-    try { console.info("[Mock] 返回 mock 数据 → " + rule.response.status + " " + (rule.response.contentType || ""), rule.response.bodyType === "empty" ? "(空 body)" : preview(rule.response.body)); } catch (e) {}
+    dlog("XHR 命中规则", rule.id, rule.name, info.method, info.url);
+    dlog("返回 mock 数据 → " + rule.response.status + " " + (rule.response.contentType || ""), rule.response.bodyType === "empty" ? "(空 body)" : preview(rule.response.body));
 
     var xhr = this;
     var resp = rule.response;
@@ -375,7 +381,7 @@
     var list = Array.isArray(table) ? table : [];
     state.table = list;
     state.enabled = on !== false && list.length > 0;
-    try { console.info("[Mock] 配置已应用：规则 " + list.length + " 条，拦截" + (state.enabled ? "开启" : "关闭"), list.map(function (r) { return r.match.host + r.match.path; })); } catch (e) {}
+    dlog("配置已应用：规则 " + list.length + " 条，拦截" + (state.enabled ? "开启" : "关闭"), list.map(function (r) { return r.match.host + r.match.path; }));
     if (state.enabled) install();
     else {
       uninstall();

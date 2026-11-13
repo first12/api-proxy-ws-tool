@@ -9,6 +9,13 @@
   var STATUS_KEY = "proxySyncStatus";
   var RM = globalThis.RuleModel;
 
+  // 调试日志开关：代码配置（置 true 输出全链路诊断日志），也可由页面临时 window.__MOCK_DEBUG__ = true 打开
+  var DEBUG = window.__MOCK_DEBUG__ === true;
+  function dlog() {
+    if (!DEBUG) return;
+    try { console.info.apply(console, ["[MockBridge]"].concat([].slice.call(arguments))); } catch (e) {}
+  }
+
   // MAIN world 引擎是否已就绪（以 mock-inject 发来的 hello 为准）
   var mainAlive = false;
   var fallbackTried = false;
@@ -20,7 +27,7 @@
     } catch (e) {
       table = [];
     }
-    try { console.info("[MockBridge] 下发配置：mock 规则 " + table.length + " 条", table.map(function (r) { return (r.name || r.id) + " " + r.match.host + r.match.path; })); } catch (e) {}
+    dlog("下发配置：mock 规则 " + table.length + " 条", table.map(function (r) { return (r.name || r.id) + " " + r.match.host + r.match.path; }));
     window.postMessage({ __mockSource: SOURCE, type: "config", enabled: table.length > 0, table: table }, "*");
   }
 
@@ -93,14 +100,14 @@
   window.addEventListener("message", function (event) {
     if (event.source !== window || !event.data || event.data.__mockSource !== SOURCE) return;
     if (event.data.type === "hello") {
-      try { console.info("[MockBridge] MAIN 引擎已就绪"); } catch (e) {}
+      dlog("MAIN 引擎已就绪");
       mainAlive = true;
       reload();
     }
   });
 
   // 脚本在 document_start 运行，页面可能还没准备好监听；postMessage 由 MAIN world 的监听器异步接收
-  try { console.info("[MockBridge] 桥接已加载", location.href); } catch (e) {}
+  dlog("桥接已加载", location.href);
   reload();
   // 给 MAIN world 注册注入一个短暂的确认窗口，未就绪则走 <script> 降级注入
   setTimeout(injectMainFallback, 500);
