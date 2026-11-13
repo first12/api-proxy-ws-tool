@@ -25,10 +25,16 @@
         if (chrome.runtime.lastError) return;
         var rules = Array.isArray(res && res[KEY]) ? res[KEY] : [];
         // 权限被撤销后，已注入页面也要停止 mock。
-        // match pattern 不支持端口，须用 hostname 而非 location.origin（否则 localhost:5173 等带端口站点永远判定未授权）。
-        chrome.permissions.contains({ origins: [location.protocol + "//" + location.hostname + "/*"] }, function (granted) {
-          push(granted ? rules : []);
-        });
+        // 内容脚本环境没有 chrome.permissions API，改由 service worker 代查。
+        var origin = location.protocol + "//" + location.hostname;
+        try {
+          chrome.runtime.sendMessage({ type: "mockOriginGrant", origin: origin }, function (reply) {
+            var granted = chrome.runtime.lastError || !reply ? true : reply.granted !== false;
+            push(granted ? rules : []);
+          });
+        } catch (e) {
+          push(rules);
+        }
       });
     } catch (e) {}
   }

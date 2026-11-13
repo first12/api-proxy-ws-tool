@@ -195,6 +195,13 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     resync().then((status) => sendResponse({ ok: true, status }));
     return true;
   }
+  // 内容脚本环境没有 chrome.permissions，由 SW 代查（mock-bridge 用）
+  if (msg && msg.type === "mockOriginGrant" && typeof msg.origin === "string") {
+    chrome.permissions.contains({ origins: [msg.origin + "/*"] })
+      .then((granted) => sendResponse({ granted: !!granted }))
+      .catch(() => sendResponse({ granted: true }));
+    return true;
+  }
   return false;
 });
 
