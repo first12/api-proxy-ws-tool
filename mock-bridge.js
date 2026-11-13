@@ -24,8 +24,9 @@
       chrome.storage.local.get(KEY, function (res) {
         if (chrome.runtime.lastError) return;
         var rules = Array.isArray(res && res[KEY]) ? res[KEY] : [];
-        // 权限被撤销后，已注入页面也要停止 mock
-        chrome.permissions.contains({ origins: [location.origin + "/*"] }, function (granted) {
+        // 权限被撤销后，已注入页面也要停止 mock。
+        // match pattern 不支持端口，须用 hostname 而非 location.origin（否则 localhost:5173 等带端口站点永远判定未授权）。
+        chrome.permissions.contains({ origins: [location.protocol + "//" + location.hostname + "/*"] }, function (granted) {
           push(granted ? rules : []);
         });
       });
