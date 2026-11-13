@@ -1,0 +1,94 @@
+{
+  "exportedAt": "2026-01-01T08:00:00.000Z",
+  "page": "https://example.com/demo",
+  "connections": [
+    {
+      "id": "ws-1",
+      "url": "wss://example.com/ws/chat?client_type=web",
+      "openedAt": "2026-01-01T08:00:01.000Z",
+      "closedAt": null,
+      "closeCode": null,
+      "truncated": false,
+      "frameCount": 3,
+      "frames": [
+        {
+          "direction": "open",
+          "timestamp": "2026-01-01T08:00:01.000Z",
+          "ts": 1767244801000,
+          "kind": "text",
+          "byteLength": 41,
+          "previewBase64": null,
+          "truncated": false,
+          "pending": false,
+          "payload": "wss://example.com/ws/chat?client_type=web"
+        },
+        {
+          "direction": "out",
+          "timestamp": "2026-01-01T08:00:01.120Z",
+          "ts": 1767244801120,
+          "kind": "text",
+          "byteLength": 74,
+          "previewBase64": null,
+          "truncated": false,
+          "pending": false,
+          "payload": "{\"action\":\"SUBSCRIBE\",\"session_id\":\"session-demo-0001\"}"
+        },
+        {
+          "direction": "in",
+          "timestamp": "2026-01-01T08:00:01.240Z",
+          "ts": 1767244801240,
+          "kind": "text",
+          "byteLength": 96,
+          "previewBase64": null,
+          "truncated": false,
+          "pending": false,
+          "payload": "{\"action\":\"SUBSCRIBED\",\"session_id\":\"session-demo-0001\",\"ok\":true}"
+        }
+      ]
+    },
+    {
+      "id": "ws-2",
+      "url": "wss://example.com/ws/notify",
+      "openedAt": "2026-01-01T08:01:00.000Z",
+      "closedAt": "2026-01-01T08:02:30.000Z",
+      "closeCode": 1000,
+      "truncated": true,
+      "frameCount": 3,
+      "frames": [
+        {
+          "direction": "in",
+          "timestamp": "2026-01-01T08:01:02.000Z",
+          "ts": 1767244862000,
+          "kind": "text",
+          "byteLength": 45,
+          "previewBase64": null,
+          "truncated": false,
+          "pending": false,
+          "payload": "{\"type\":\"notice\",\"level\":\"info\",\"id\":12}"
+        },
+        {
+          "direction": "in",
+          "timestamp": "2026-01-01T08:02:10.000Z",
+          "ts": 1767244930000,
+          "kind": "text",
+          "byteLength": 262144,
+          "previewBase64": null,
+          "truncated": true,
+          "pending": false,
+          "payload": "{\"type\":\"snapshot\",\"data\":[{\"id\":1,\"status\":\"running\"},"
+        },
+        {
+          "direction": "close",
+          "timestamp": "2026-01-01T08:02:30.000Z",
+          "ts": 1767244950000,
+          "kind": "text",
+          "byteLength": 0,
+          "previewBase64": null,
+          "truncated": false,
+          "pending": false,
+          "payload": "1000 Normal Closure"
+        }
+      ]
+    }
+  ]
+}

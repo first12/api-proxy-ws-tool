@@ -53,7 +53,7 @@
 ### WebSocket 抓包导出
 
 1. 在目标页面上按 `F12` 打开开发者工具
-2. 切换到 **【WS抓包】** 面板（面板随页面加载自动注入钩子）
+2. 切换到 **【wsData】** 面板（面板随页面加载自动注入钩子）
 3. 面板中会按连接分组实时展示 WS 消息：
    - `in` = 收到消息（服务器 → 页面）
    - `out` = 发送消息（页面 → 服务器）
@@ -64,6 +64,10 @@
 
 ### 导出 JSON 格式示例
 
+每帧包含 `direction`（`open` / `out` / `in` / `close`）、`timestamp`、`ts`、`kind`、`byteLength`、`truncated`、`pending` 与 `payload` 字段；`truncated: true` 表示该帧超过单帧上限被截断。
+
+完整脱敏示例见 [docs/examples/ws-export-sample.json](docs/examples/ws-export-sample.json)：
+
 ```json
 {
   "exportedAt": "2026-01-01T08:00:00.000Z",
@@ -71,35 +75,42 @@
   "connections": [
     {
       "id": "ws-1",
-      "url": "wss://example.com/socket",
+      "url": "wss://example.com/ws/chat?client_type=web",
       "openedAt": "2026-01-01T08:00:01.000Z",
       "closedAt": null,
       "closeCode": null,
       "truncated": false,
-      "frameCount": 2,
+      "frameCount": 3,
       "frames": [
-        { "direction": "open", "timestamp": "2026-01-01T08:00:01.000Z", "ts": 1767244801000, "payload": "wss://example.com/socket" },
-        { "direction": "in", "timestamp": "2026-01-01T08:00:02.000Z", "ts": 1767244802000, "payload": "{\"type\":\"hello\"}" }
+        { "direction": "open", "timestamp": "2026-01-01T08:00:01.000Z", "ts": 1767244801000, "kind": "text", "byteLength": 41, "truncated": false, "payload": "wss://example.com/ws/chat?client_type=web" },
+        { "direction": "out", "timestamp": "2026-01-01T08:00:01.120Z", "ts": 1767244801120, "kind": "text", "byteLength": 74, "truncated": false, "payload": "{\"action\":\"SUBSCRIBE\",\"session_id\":\"session-demo-0001\"}" },
+        { "direction": "in", "timestamp": "2026-01-01T08:00:01.240Z", "ts": 1767244801240, "kind": "text", "byteLength": 96, "truncated": false, "payload": "{\"action\":\"SUBSCRIBED\",\"session_id\":\"session-demo-0001\",\"ok\":true}" }
       ]
     }
   ]
 }
 ```
 
+> 示例中的域名、会话 ID 与报文均为虚构数据，`previewBase64` / `pending` 字段为长帧与流式帧保留。
+
 ## 目录结构
 
 ```
 ├── manifest.json          # 扩展清单（MV3）
-├── sw.js                  # Service Worker：把规则同步成 DNR 动态重定向规则
+├── sw.js                  # Service Worker：DNR 规则同步、mock 注入脚本注册
+├── rules-model.js         # 规则模型：迁移 / 校验 / 匹配 / mock 表构建（options、sw、桥接共用）
 ├── popup.html / popup.js  # 扩展弹窗：代理规则的增删改与开关
-├── devtools.html / devtools.js        # DevTools 入口，注册【WS抓包】面板
+├── options.html / options.js  # 规则配置页：列表、授权、导入导出
+├── mock-bridge.js         # ISOLATED 桥接：把 mock 表下发到页面，必要时降级注入引擎
+├── mock-inject.js         # MAIN world Mock 引擎：拦截页面 fetch / XHR
+├── devtools.html / devtools.js        # DevTools 入口，注册【wsData】面板
 ├── devtools-panel.html / devtools-panel.js  # 面板 UI：轮询展示、清空、导出
 └── ws-hook-source.js      # 注入页面的 WebSocket 钩子源码（主世界）
 ```
 
 ## 已知限制
 
-- **Mock 规则不生效**：MV3 普通扩展无法通过 `webRequestBlocking` 返回自定义响应体，`declarativeNetRequest` 只能改请求目标。因此当前版本中「Mock返回」类型的规则不会被应用（保留字段以备后续版本）。
+- **Mock 仅覆盖页面脚本发起的请求**：mock 通过页面内 `fetch` / `XMLHttpRequest` 拦截实现，因此只作用于页面 JS 发起的请求；文档导航、`<img>` / `<script>` 等资源类请求不经过 mock（这类请求请使用「转发代理」规则）。返回内容必须由用户自行填写，结构需符合业务预期。
 - **WebSocket 只读**：WS 面板仅用于查看与导出，不能修改或转发 WebSocket 消息（浏览器扩展无法在后台劫持 WS）。
 - 页面在钩子注入之前建立的 WS 连接无法被捕获（刷新页面后重连即可）。
 
