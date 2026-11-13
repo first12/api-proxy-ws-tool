@@ -499,7 +499,7 @@ textarea.input{
         <div class="field">
           <label>接口路径 <span class="req">支持 * 通配</span></label>
           <input class="input" id="dPath" spellcheck="false">
-          <div class="hint">与 host 拼接为 urlFilter，例：<span style="font-family:var(--mono)">10.114.0.11/api/*</span></div>
+          <div class="hint">与 host 拼接为 urlFilter，例：<span style="font-family:var(--mono)">192.168.1.100/api/*</span></div>
         </div>
 
         <div class="group-label">动作</div>
@@ -522,7 +522,7 @@ textarea.input{
 
         <div class="field" id="dTargetField">
           <label id="dTargetLabel">替换后路径</label>
-          <input class="input" id="dTarget" spellcheck="false" placeholder="/da-digital-test/api/sessions">
+          <input class="input" id="dTarget" spellcheck="false" placeholder="/proxy/api/sessions">
           <div class="hint" id="dTargetHint">只替换 path，query 与 hash 由浏览器保留。</div>
           <div class="err" id="dTargetErr" hidden>必填。为空时该规则不会生成 DNR 规则，等同于失效。</div>
         </div>
@@ -636,21 +636,21 @@ textarea.input{
 
   /* ═══════════ 页面 1 数据 ═══════════ */
   const RULES = [
-    { id: "r1", host: "10.114.0.11", path: "/da-digital/api/sessions", type: "proxy", mode: "pathReplace", target: "/da-digital-test/api/sessions", enable: true, prio: 1, conflict: "与 r2（/da-digital/api/*）重叠匹配，同优先级下 DNR 命中顺序不确定" },
-    { id: "r2", host: "10.114.0.11", path: "/da-digital/api/*", type: "proxy", mode: "pathReplace", target: "/da-digital-test/api", enable: true, prio: 1, conflict: "与 r1、r11 重叠匹配" },
-    { id: "r3", host: "10.114.0.11", path: "/da-digital/ws/*", type: "proxy", mode: "fullUrl", target: "https://10.114.0.20:8443/da-digital/ws", enable: true, prio: 1 },
+    { id: "r1", host: "192.168.1.100", path: "/demo/api/sessions", type: "proxy", mode: "pathReplace", target: "/proxy/api/sessions", enable: true, prio: 1, conflict: "与 r2（/demo/api/*）重叠匹配，同优先级下 DNR 命中顺序不确定" },
+    { id: "r2", host: "192.168.1.100", path: "/demo/api/*", type: "proxy", mode: "pathReplace", target: "/proxy/api", enable: true, prio: 1, conflict: "与 r1、r11 重叠匹配" },
+    { id: "r3", host: "192.168.1.100", path: "/demo/ws/*", type: "proxy", mode: "fullUrl", target: "https://192.168.1.200:8443/demo/ws", enable: true, prio: 1 },
     { id: "r4", host: "api.example.local", path: "/v2/orders", type: "mock", mode: "pathReplace", target: "", enable: true, prio: 1, mockSize: 412 },
     { id: "r5", host: "api.example.local", path: "/v2/profile", type: "mock", mode: "pathReplace", target: "", enable: true, prio: 1, mockSize: 268 },
     { id: "r6", host: "cdn.example.local", path: "/assets/*.json", type: "proxy", mode: "fullUrl", target: "https://cdn-test.example.local/assets", enable: true, prio: 1 },
-    { id: "r7", host: "10.114.0.11", path: "/da-digital/api/session/detail", type: "proxy", mode: "pathReplace", target: "", enable: true, prio: 1 },
+    { id: "r7", host: "192.168.1.100", path: "/demo/api/session/detail", type: "proxy", mode: "pathReplace", target: "", enable: true, prio: 1 },
     { id: "r8", host: "qa.example.local", path: "/api/*", type: "proxy", mode: "pathReplace", target: "/api-v2", enable: false, prio: 1 },
-    { id: "r9", host: "old.example.local", path: "/legacy/*", type: "proxy", mode: "fullUrl", target: "http://10.114.0.30:9000/legacy", enable: false, prio: 1 },
+    { id: "r9", host: "old.example.local", path: "/legacy/*", type: "proxy", mode: "fullUrl", target: "http://192.168.1.130:9000/legacy", enable: false, prio: 1 },
     { id: "r10", host: "api.example.local", path: "/v1/ws/handshake", type: "mock", mode: "pathReplace", target: "", enable: true, prio: 1, mockSize: 204 },
-    { id: "r11", host: "10.114.0.11", path: "/da-digital/api/session/state", type: "proxy", mode: "pathReplace", target: "/da-digital-test/api/session/state", enable: true, prio: 1, conflict: "与 r2 的 * 通配重叠，同优先级下 DNR 命中顺序不确定" },
-    { id: "r12", host: "10.114.0.11", path: "/da-digital/api/reports", type: "proxy", mode: "fullUrl", target: "https://10.114.0.20:8443/da-digital/api/reports", enable: true, prio: 1 },
+    { id: "r11", host: "192.168.1.100", path: "/demo/api/session/state", type: "proxy", mode: "pathReplace", target: "/proxy/api/session/state", enable: true, prio: 1, conflict: "与 r2 的 * 通配重叠，同优先级下 DNR 命中顺序不确定" },
+    { id: "r12", host: "192.168.1.100", path: "/demo/api/reports", type: "proxy", mode: "fullUrl", target: "https://192.168.1.200:8443/demo/api/reports", enable: true, prio: 1 },
     { id: "r13", host: "qa.example.local", path: "/api/orders", type: "proxy", mode: "pathReplace", target: "/api-v2/orders", enable: false, prio: 1 },
-    { id: "r14", host: "10.114.0.11", path: "/da-digital/static/*", type: "proxy", mode: "pathReplace", target: "/static", enable: true, prio: 1 },
-    { id: "r15", host: "10.114.0.11", path: "/da-digital/api/exports", type: "proxy", mode: "pathReplace", target: "/da-digital-test/api/exports", enable: true, prio: 1 },
+    { id: "r14", host: "192.168.1.100", path: "/demo/static/*", type: "proxy", mode: "pathReplace", target: "/static", enable: true, prio: 1 },
+    { id: "r15", host: "192.168.1.100", path: "/demo/api/exports", type: "proxy", mode: "pathReplace", target: "/proxy/api/exports", enable: true, prio: 1 },
     { id: "r16", host: "dash.example.local", path: "/api/widgets/*", type: "proxy", mode: "fullUrl", target: "https://dash-test.example.local/api/widgets", enable: true, prio: 1 },
     { id: "r17", host: "qa.example.local", path: "/api/legacy", type: "proxy", mode: "pathReplace", target: "/api", enable: false, prio: 1 }
   ];
@@ -792,11 +792,11 @@ textarea.input{
     if (draft.mode === "fullUrl") {
       label.textContent = "完整目标 URL";
       hint.textContent = "整体替换请求目标，原 query 不再保留。";
-      input.placeholder = "https://10.114.0.20:8443/da-digital/api";
+      input.placeholder = "https://192.168.1.200:8443/demo/api";
     } else {
       label.textContent = "替换后路径";
       hint.textContent = "只替换 path，query 与 hash 由浏览器保留。";
-      input.placeholder = "/da-digital-test/api/sessions";
+      input.placeholder = "/proxy/api/sessions";
     }
 
     $("#dEnableNote").textContent = draft.enable
@@ -885,15 +885,15 @@ textarea.input{
   }
 
   const FEW = [
-    { id: "ws-6", url: "wss://10.114.0.11/da-digital/ws/notify", openedAt: "12:04:58.112", closedAt: null, closeCode: null, frameCount: 3, truncated: false,
+    { id: "ws-6", url: "wss://192.168.1.100/demo/ws/notify", openedAt: "12:04:58.112", closedAt: null, closeCode: null, frameCount: 3, truncated: false,
       frames: [
-        { t: "12:04:58.112", dir: "open", payload: "wss://10.114.0.11/da-digital/ws/notify" },
+        { t: "12:04:58.112", dir: "open", payload: "wss://192.168.1.100/demo/ws/notify" },
         { t: "12:04:58.401", dir: "in", payload: '{"type":"notice","level":"info","msg":"worker w-3 ready"}' },
         { t: "12:04:59.002", dir: "in", payload: '{"type":"notice","level":"warn","msg":"queue backlog 3"}' }
       ] },
-    { id: "ws-5", url: "wss://10.114.0.11/da-digital/ws/session", openedAt: "12:04:11.204", closedAt: null, closeCode: null, frameCount: 24, truncated: false,
+    { id: "ws-5", url: "wss://192.168.1.100/demo/ws/session", openedAt: "12:04:11.204", closedAt: null, closeCode: null, frameCount: 24, truncated: false,
       frames: [
-        { t: "12:04:11.204", dir: "open", payload: "wss://10.114.0.11/da-digital/ws/session" },
+        { t: "12:04:11.204", dir: "open", payload: "wss://192.168.1.100/demo/ws/session" },
         { t: "12:04:11.341", dir: "out", payload: '{"type":"subscribe","topics":["session.list","session.update"]}' },
         { t: "12:04:11.402", dir: "in", payload: '{"type":"subscribed","channel":"session.list","replay":false}' },
         { t: "12:04:16.007", dir: "out", payload: '{"type":"ping","seq":41}' },
@@ -918,20 +918,20 @@ textarea.input{
         { t: "12:04:33.040", dir: "in", payload: '{"type":"unsubscribed","topics":["session.update"]}' },
         { t: "12:04:36.118", dir: "in", payload: '{"type":"heartbeat","t":1762315806118,"uptimeMs":24800}' }
       ] },
-    { id: "ws-4", url: "wss://10.114.0.11/da-digital/ws/session", openedAt: "12:03:46.331", closedAt: "12:04:09.412", closeCode: 1000, frameCount: 12, truncated: false, frames: [] },
+    { id: "ws-4", url: "wss://192.168.1.100/demo/ws/session", openedAt: "12:03:46.331", closedAt: "12:04:09.412", closeCode: 1000, frameCount: 12, truncated: false, frames: [] },
     { id: "ws-3", url: "wss://dash.example.local/ws/dashboard", openedAt: "12:03:12.008", closedAt: "12:03:12.009", closeCode: 1006, frameCount: 0, truncated: false, frames: [] },
-    { id: "ws-2", url: "wss://10.114.0.21/ws/task/17", openedAt: "12:02:58.734", closedAt: "12:04:02.118", closeCode: 1000, frameCount: 2374, truncated: true, frames: [] }
+    { id: "ws-2", url: "wss://192.168.1.201/ws/task/17", openedAt: "12:02:58.734", closedAt: "12:04:02.118", closeCode: 1000, frameCount: 2374, truncated: true, frames: [] }
   ];
 
   const PATTERNS = [
-    ["10.114.0.11", "/da-digital/ws/session"],
-    ["10.114.0.11", "/da-digital/ws/notify"],
+    ["192.168.1.100", "/demo/ws/session"],
+    ["192.168.1.100", "/demo/ws/notify"],
     ["dash.example.local", "/ws/dashboard"],
-    ["10.114.0.11", "/da-digital/ws/trace"],
-    ["10.114.0.21", "/ws/task/17"],
+    ["192.168.1.100", "/demo/ws/trace"],
+    ["192.168.1.201", "/ws/task/17"],
     ["api.example.local", "/v2/ws/stream"],
-    ["10.114.0.11", "/da-digital/ws/session"],
-    ["10.114.0.11", "/da-digital/ws/notify"]
+    ["192.168.1.100", "/demo/ws/session"],
+    ["192.168.1.100", "/demo/ws/notify"]
   ];
   const FCOUNT = [4, 26, 0, 11, 2, 18, 7, 0];
 
@@ -1270,7 +1270,7 @@ textarea.input{
       wState.paused = true;
       $("#payloadViewer").hidden = true;
       if (s === "many") {
-        wState.host = "10.114.0.11";
+        wState.host = "192.168.1.100";
         wState.onlyFrames = true;
         wState.st = "all";
         wState.loaded = 22;

@@ -42,12 +42,12 @@ A Chrome (Manifest V3) browser extension for frontend development, QA, and API d
 
 1. Click the extension icon in the browser toolbar to open the configuration popup
 2. Fill in a rule:
-   - **Host**: e.g. `10.114.0.11` or `example.com`
-   - **API path**: e.g. `/da-digital/api/sessions`, wildcards like `/api/*` are supported
+   - **Host**: e.g. `192.168.1.100` or `www.example.com`
+   - **API path**: e.g. `/api/user/list`, wildcards like `/api/*` are supported
    - **Type**: choose "Proxy"
    - **Redirect mode**:
-     - Path Replace: enter the new path, e.g. `/da-digital-test/api/sessions`
-     - Full Target URL: enter the complete target, e.g. `http://test-env/api/sessions?a=1`
+     - Path Replace: enter the new path, e.g. `/proxy/api/user/list`
+     - Full Target URL: enter the complete target, e.g. `https://example.com/api/user/list?a=1`
 3. Click **Add rule** — it takes effect immediately (saved rules are synced into browser dynamic redirect rules automatically)
 
 ### WebSocket Capture & Export

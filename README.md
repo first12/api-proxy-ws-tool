@@ -42,12 +42,12 @@
 
 1. 点击浏览器工具栏中的扩展图标，打开配置弹窗
 2. 填写规则：
-   - **域名 host**：如 `10.114.0.11` 或 `example.com`
-   - **接口路径**：如 `/da-digital/api/sessions`，支持通配如 `/api/*`
+   - **域名 host**：如 `192.168.1.100` 或 `www.example.com`
+   - **接口路径**：如 `/api/user/list`，支持通配如 `/api/*`
    - **类型**：选择「转发代理」
    - **转发模式**：
-     - 路径替换：填写「替换后路径」，如 `/da-digital-test/api/sessions`
-     - 完整目标 URL：填写完整目标地址，如 `http://test-env/api/sessions?a=1`
+     - 路径替换：填写「替换后路径」，如 `/proxy/api/user/list`
+     - 完整目标 URL：填写完整目标地址，如 `https://example.com/api/user/list?a=1`
 3. 点击「添加规则」，规则立即生效（保存后自动同步为浏览器动态重定向规则）
 
 ### WebSocket 抓包导出
