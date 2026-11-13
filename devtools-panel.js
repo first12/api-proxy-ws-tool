@@ -184,7 +184,7 @@ function dirCounts() {
 
 function renderDirChips() {
   const c = dirCounts();
-  const items = [["all", "全部"], ["in", "in"], ["out", "out"], ["open", "open"], ["close", "close"]];
+  const items = [["all", "全部"], ["in", "in"], ["out", "out"], ["open", "open"]];
   document.getElementById("dirChips").innerHTML = items.map(([k, label]) =>
     '<button class="dir-chip' + (ui.dir === k ? " active" : "") + '" data-dir="' + k + '">' + label + " " + c[k] + "</button>").join("");
 }
