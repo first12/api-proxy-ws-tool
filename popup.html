@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="zh-CN" data-i18n-doc-title="popup.docTitle">
 <head>
 <meta charset="utf-8">
 <style>
@@ -42,26 +42,29 @@ button:focus-visible{outline:none;box-shadow:0 0 0 3px rgba(43,106,140,.28);}
 <body>
 <div class="head">
   <div class="brand">AP</div>
-  <div class="title">接口代理</div>
+  <div class="title" data-i18n="popup.appTitle">接口代理</div>
 </div>
 <div class="body">
   <div class="stats">
-    <div class="card"><div class="n" id="nAll">0</div><div class="l">规则</div></div>
-    <div class="card"><div class="n" id="nOn">0</div><div class="l">生效</div></div>
-    <div class="card"><div class="n" id="nPend">0</div><div class="l">待授权</div></div>
+    <div class="card"><div class="n" id="nAll">0</div><div class="l" data-i18n="popup.statRules">规则</div></div>
+    <div class="card"><div class="n" id="nOn">0</div><div class="l" data-i18n="popup.statActive">生效</div></div>
+    <div class="card"><div class="n" id="nPend">0</div><div class="l" data-i18n="popup.statPending">待授权</div></div>
   </div>
 
-  <div id="syncBar" class="bar ok">尚未同步</div>
+  <div id="syncBar" class="bar ok" data-i18n="popup.syncIdle">尚未同步</div>
 
   <div id="pendingWrap"></div>
-  <div id="pendingEmpty" class="hint" style="display:none;">所有规则的域名都已授权。</div>
+  <div id="pendingEmpty" class="hint" style="display:none;" data-i18n="popup.allAuthorized">所有规则的域名都已授权。</div>
 
-  <div class="hint">规则配置、请求头与 Mock 在「打开配置页」中维护；wsData 在 DevTools 的「wsData」标签里。</div>
+  <div class="hint" data-i18n="popup.hint">规则配置、请求头与 Mock 在「打开配置页」中维护；wsData 在 DevTools 的「wsData」标签里。</div>
 </div>
 <div class="foot">
-  <button id="openOptions" class="primary">打开配置页</button>
-  <button id="resync">重新同步</button>
+  <button id="openOptions" class="primary" data-i18n="popup.openOptions">打开配置页</button>
+  <button id="resync" data-i18n="popup.resync">重新同步</button>
 </div>
+<script src="i18n.js"></script>
+<script src="i18n-popup.js"></script>
+<script src="i18n-model.js"></script>
 <script src="rules-model.js"></script>
 <script src="popup.js"></script>
 </body>

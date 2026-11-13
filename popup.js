@@ -1,5 +1,7 @@
 const $ = (s) => document.querySelector(s);
 const R = RuleModel;
+// 取词条：语言在 I18N.ready 后确定，渲染统一在 ready 之后执行
+const T = (key, params) => I18N.t(key, params);
 
 let rules = [];
 let status = null;
@@ -50,15 +52,17 @@ function render() {
   const bar = $("#syncBar");
   if (status && status.lastSyncError) {
     bar.className = "bar bad";
-    bar.textContent = "同步失败：" + status.lastSyncError;
+    bar.textContent = T("popup.syncFailed", { msg: status.lastSyncError });
   } else if (status) {
     bar.className = "bar " + (pending.length ? "warn" : "ok");
-    bar.textContent = "已生成 " + (status.applied || 0) + " 条 DNR 规则"
-      + (status.skippedNoPermission ? " · " + status.skippedNoPermission + " 条待授权" : "")
-      + (status.at ? " · " + new Date(status.at).toLocaleTimeString("zh-CN", { hour12: false }) : "");
+    bar.textContent = T("popup.syncDone", { n: status.applied || 0 })
+      + (status.skippedNoPermission ? T("popup.syncPending", { n: status.skippedNoPermission }) : "")
+      + (status.at
+        ? " · " + new Date(status.at).toLocaleTimeString(I18N.lang === "en" ? "en-US" : "zh-CN", { hour12: false })
+        : "");
   } else {
     bar.className = "bar warn";
-    bar.textContent = "尚未同步，修改规则后会自动编译";
+    bar.textContent = T("popup.syncNever");
   }
 
   const wrap = $("#pendingWrap");
@@ -68,45 +72,48 @@ function render() {
     row.className = "row";
     row.innerHTML =
       '<span class="h">' + escapeHtml(host) + '</span>' +
-      '<span class="m">待授权</span>' +
-      '<button data-host="' + escapeHtml(host) + '">授权</button>';
+      '<span class="m">' + escapeHtml(T("popup.rowPending")) + '</span>' +
+      '<button data-host="' + escapeHtml(host) + '">' + escapeHtml(T("popup.grant")) + '</button>';
     wrap.appendChild(row);
   });
   $("#pendingEmpty").style.display = pending.length ? "none" : "block";
 }
 
-$("#pendingWrap").addEventListener("click", async (e) => {
-  const btn = e.target.closest("button");
-  if (!btn) return;
-  const host = btn.dataset.host;
-  // 必须由用户手势触发
-  const granted = await chrome.permissions.request({
-    origins: ["https://" + host + "/*", "http://" + host + "/*"]
+// 等语言确定后再渲染，避免英文环境下首屏闪现中文
+I18N.ready.then(() => {
+  $("#pendingWrap").addEventListener("click", async (e) => {
+    const btn = e.target.closest("button");
+    if (!btn) return;
+    const host = btn.dataset.host;
+    // 必须由用户手势触发
+    const granted = await chrome.permissions.request({
+      origins: ["https://" + host + "/*", "http://" + host + "/*"]
+    });
+    if (!granted) {
+      $("#syncBar").className = "bar bad";
+      $("#syncBar").textContent = T("popup.grantDenied", { host: host });
+      return;
+    }
+    await new Promise((r) => setTimeout(r, 200));
+    await load();
   });
-  if (!granted) {
+
+  $("#openOptions").onclick = () => chrome.runtime.openOptionsPage();
+  $("#resync").onclick = () => {
+    chrome.runtime.sendMessage({ type: "resync" }, () => {
+      void chrome.runtime.lastError;
+      setTimeout(load, 300);
+    });
+  };
+
+  chrome.storage.onChanged.addListener((changes, area) => {
+    if (area === "local" && (changes.proxyRules || changes.proxySyncStatus)) {
+      load().catch((e) => console.warn("[ProxyPlugin] popup 刷新失败", e));
+    }
+  });
+
+  return load().catch((e) => {
     $("#syncBar").className = "bar bad";
-    $("#syncBar").textContent = "未获得 " + host + " 的授权，可再次点击重试";
-    return;
-  }
-  await new Promise((r) => setTimeout(r, 200));
-  await load();
-});
-
-$("#openOptions").onclick = () => chrome.runtime.openOptionsPage();
-$("#resync").onclick = () => {
-  chrome.runtime.sendMessage({ type: "resync" }, () => {
-    void chrome.runtime.lastError;
-    setTimeout(load, 300);
+    $("#syncBar").textContent = T("popup.initFailed", { msg: e.message });
   });
-};
-
-chrome.storage.onChanged.addListener((changes, area) => {
-  if (area === "local" && (changes.proxyRules || changes.proxySyncStatus)) {
-    load().catch((e) => console.warn("[ProxyPlugin] popup 刷新失败", e));
-  }
-});
-
-load().catch((e) => {
-  $("#syncBar").className = "bar bad";
-  $("#syncBar").textContent = "初始化失败：" + e.message;
 });

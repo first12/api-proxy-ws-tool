@@ -1,6 +1,8 @@
 const $ = (s) => document.querySelector(s);
 const $$ = (s) => Array.prototype.slice.call(document.querySelectorAll(s));
 const R = RuleModel;
+// 取词条：语言在 I18N.ready 后确定，渲染统一在 ready 之后执行
+const T = (key, params) => I18N.t(key, params);
 
 const state = {
   rules: [],
@@ -22,7 +24,7 @@ function escapeHtml(s) {
 function fmtTime(ms) {
   if (!ms) return "";
   const d = new Date(ms);
-  return d.toLocaleTimeString("zh-CN", { hour12: false });
+  return d.toLocaleTimeString(I18N.lang === "en" ? "en-US" : "zh-CN", { hour12: false });
 }
 
 async function load() {
@@ -57,22 +59,22 @@ async function refreshPerms() {
 
 // 派生状态：启用 / 停用 / 配置错误 / 待授权 / Mock 不生效
 function ruleState(rule) {
-  if (rule.enabled === false) return { key: "off", text: "已停用", dot: "warn" };
+  if (rule.enabled === false) return { key: "off", text: T("options.statusOff"), dot: "warn" };
   const errors = R.validateRule(rule, state.rules);
-  if (errors.length) return { key: "bad", text: "配置错误", dot: "bad", errors };
+  if (errors.length) return { key: "bad", text: T("options.statusBad"), dot: "bad", errors };
   const host = R.normalizeHost(rule.match && rule.match.host);
   const grant = state.perms[host] || { https: false, http: false };
-  if (!grant.https && !grant.http) return { key: "pending", text: "待授权", dot: "warn", host };
-  if (rule.action && rule.action.kind === "mock") return { key: "on", text: "Mock 生效", dot: "ok" };
-  return { key: "on", text: "生效", dot: "ok" };
+  if (!grant.https && !grant.http) return { key: "pending", text: T("options.statusPending"), dot: "warn", host };
+  if (rule.action && rule.action.kind === "mock") return { key: "on", text: T("options.statusMockOn"), dot: "ok" };
+  return { key: "on", text: T("options.statusOn"), dot: "ok" };
 }
 
 function targetText(rule) {
   const a = rule.action || {};
   if (a.kind === "mock") return "Mock " + ((a.mock && a.mock.status) || 200);
-  if (a.kind === "headers") return (Array.isArray(a.headers) ? a.headers.length : 0) + " 个请求头";
-  if (a.kind === "url") return a.targetUrl || "未设置";
-  return a.targetPath || "未设置";
+  if (a.kind === "headers") return T("options.targetHeaders", { n: Array.isArray(a.headers) ? a.headers.length : 0 });
+  if (a.kind === "url") return a.targetUrl || T("options.targetUnset");
+  return a.targetPath || T("options.targetUnset");
 }
 
 function matchesQuery(rule) {
@@ -103,7 +105,7 @@ function renderStats() {
     if (st.key === "bad") counts.bad++;
     if (st.key === "pending") counts.pending++;
   });
-  $("#stats").innerHTML = `共 <b>${counts.all}</b> 条 · 生效 <b>${counts.on}</b> · 停用 <b>${counts.off}</b> · 异常 <b>${counts.bad}</b> · 待授权 <b>${counts.pending}</b>`;
+  $("#stats").innerHTML = T("options.statsLine", counts);
   $("#nAll").textContent = counts.all;
   $("#nOn").textContent = counts.on;
   $("#nOff").textContent = counts.off;
@@ -122,15 +124,15 @@ function renderTable() {
     const tr = document.createElement("tr");
     if (state.editingId === rule.id) tr.className = "selected";
     const kind = rule.action.kind;
-    const typeText = kind === "mock" ? "Mock" : kind === "headers" ? "请求头" : "转发";
-    const subText = kind === "mock" ? "本地响应" : kind === "url" ? "完整 URL" : kind === "headers" ? "仅改请求头" : "路径替换";
+    const typeText = kind === "mock" ? "Mock" : kind === "headers" ? T("options.typeHeaders") : T("options.typeForward");
+    const subText = kind === "mock" ? T("options.subMock") : kind === "url" ? T("options.subUrl") : kind === "headers" ? T("options.subHeaders") : T("options.subPrefix");
     const pendingBtn = st.key === "pending"
-      ? ' <button class="text grant" data-id="' + escapeHtml(rule.id) + '">授权此域名</button>'
+      ? ' <button class="text grant" data-id="' + escapeHtml(rule.id) + '">' + T("options.grant") + '</button>'
       : "";
     const nameText = rule.name || "";
     tr.innerHTML =
-      '<td class="col-en"><button class="switch ' + (rule.enabled !== false ? "on" : "") + '" data-act="toggle" data-id="' + escapeHtml(rule.id) + '" aria-label="启用"></button></td>' +
-      '<td class="col-name" title="' + escapeHtml(nameText) + '"><span class="name' + (nameText ? "" : " none") + '">' + escapeHtml(nameText || "未命名") + '</span></td>' +
+      '<td class="col-en"><button class="switch ' + (rule.enabled !== false ? "on" : "") + '" data-act="toggle" data-id="' + escapeHtml(rule.id) + '" aria-label="' + T("options.toggleAria") + '"></button></td>' +
+      '<td class="col-name" title="' + escapeHtml(nameText) + '"><span class="name' + (nameText ? "" : " none") + '">' + escapeHtml(nameText || T("options.unnamed")) + '</span></td>' +
       '<td class="col-match" title="' + escapeHtml((rule.match.host || "") + (rule.match.path || "")) + '">' +
         '<span class="host">' + escapeHtml(rule.match.host) + '</span><span class="path">' + escapeHtml(rule.match.path) + '</span>' +
       '</td>' +
@@ -138,8 +140,8 @@ function renderTable() {
       '<td class="col-target" title="' + escapeHtml(targetText(rule)) + '">' + escapeHtml(targetText(rule)) + '</td>' +
       '<td class="col-status"><span class="status"><span class="dot ' + st.dot + '"></span>' + st.text + pendingBtn + '</span></td>' +
       '<td class="col-order mono">P' + (Number(rule.order) + 1) + '</td>' +
-      '<td class="col-act"><button class="text" data-act="edit" data-id="' + escapeHtml(rule.id) + '">编辑</button>' +
-        '<button class="text danger" data-act="del" data-id="' + escapeHtml(rule.id) + '">删除</button></td>';
+      '<td class="col-act"><button class="text" data-act="edit" data-id="' + escapeHtml(rule.id) + '">' + T("options.edit") + '</button>' +
+        '<button class="text danger" data-act="del" data-id="' + escapeHtml(rule.id) + '">' + T("options.delete") + '</button></td>';
     tbody.appendChild(tr);
   });
 
@@ -147,10 +149,10 @@ function renderTable() {
   empty.classList.toggle("show", rows.length === 0);
   if (rows.length === 0) {
     const hasRules = state.rules.length > 0;
-    $("#emptyTitle").textContent = hasRules ? "没有匹配的规则" : "还没有代理规则";
+    $("#emptyTitle").textContent = hasRules ? T("options.emptyTitleFiltered") : T("options.emptyTitle");
     $("#emptyDesc").textContent = hasRules
-      ? "当前筛选或搜索条件下没有结果。"
-      : "新增规则后会编译为 declarativeNetRequest 动态规则，仅对已授权的域名生效。";
+      ? T("options.emptyDescFiltered")
+      : T("options.emptyDesc");
     $("#emptyClear").style.display = hasRules ? "inline-block" : "none";
     $("#emptyNew").style.display = hasRules ? "none" : "inline-block";
   }
@@ -161,7 +163,7 @@ function renderStatusBar() {
   const s = state.status;
   const enabled = state.rules.filter((r) => r.enabled !== false).length;
   if (!s) {
-    $("#syncText").textContent = "尚未同步 · 已启用 " + enabled + " 条";
+    $("#syncText").textContent = T("options.syncNever", { n: enabled });
     $("#syncAt").textContent = "";
     $("#syncErr").textContent = "";
     $("#retryBtn").style.display = "none";
@@ -171,13 +173,13 @@ function renderStatusBar() {
   const mockRules = s.mockRules || 0;
   const skipped = (s.skippedNoPermission || 0) + Math.max(0, (s.skippedOther || 0) - mockRules);
   const warnCount = (s.warnings || []).length;
-  $("#syncText").textContent = "已启用 " + enabled + " 条 → 生成 " + applied + " 条 DNR 规则" +
-    (skipped ? "（跳过 " + skipped + "）" : "") + (warnCount ? "（" + warnCount + " 条警告）" : "") +
-    (mockRules ? " · Mock " + mockRules + " 条（注入 " + (s.mockMatches || 0) + " 个域名）" : "") +
-    (s.exceeded ? " · 超出上限" : "");
-  $("#syncAt").textContent = s.at ? "上次同步 " + fmtTime(s.at) : "";
-  $("#syncErr").textContent = s.lastSyncError ? ("同步异常：" + s.lastSyncError) :
-    (s.mockRegistrationError ? ("Mock 注入失败：" + s.mockRegistrationError) : "");
+  $("#syncText").textContent = T("options.syncDone", { n: enabled, applied: applied }) +
+    (skipped ? T("options.syncSkipped", { n: skipped }) : "") + (warnCount ? T("options.syncWarnings", { n: warnCount }) : "") +
+    (mockRules ? T("options.syncMock", { n: mockRules, m: s.mockMatches || 0 }) : "") +
+    (s.exceeded ? T("options.syncExceeded") : "");
+  $("#syncAt").textContent = s.at ? T("options.syncAt", { time: fmtTime(s.at) }) : "";
+  $("#syncErr").textContent = s.lastSyncError ? T("options.syncError", { msg: s.lastSyncError }) :
+    (s.mockRegistrationError ? T("options.mockRegError", { msg: s.mockRegistrationError }) : "");
   $("#retryBtn").style.display = (s.lastSyncError || s.mockRegistrationError) ? "inline-block" : "none";
 }
 
@@ -193,7 +195,7 @@ function openDrawer(rule) {
   state.draft = rule ? JSON.parse(JSON.stringify(rule)) : newRule();
   fillForm(state.draft);
   $("#drawer").classList.add("open");
-  $("#drawerTitle").textContent = rule ? "编辑规则" : "新建规则";
+  $("#drawerTitle").textContent = rule ? T("options.editRuleTitle") : T("options.newRuleTitle");
   $("#deleteBtn").style.display = rule ? "inline-block" : "none";
   clearErrors();
   updateKindUi();
@@ -285,8 +287,8 @@ function addHeaderRow(h) {
   row.innerHTML =
     '<input class="h-name" placeholder="X-Debug" value="' + escapeHtml(h && h.name || "") + '">' +
     '<select class="h-op"><option value="set">set</option><option value="append">append</option><option value="remove">remove</option></select>' +
-    '<input class="h-value" placeholder="值" value="' + escapeHtml(h && h.value || "") + '">' +
-    '<button class="rm" title="删除">×</button>';
+    '<input class="h-value" data-i18n-placeholder="options.headerValue" placeholder="值" value="' + escapeHtml(h && h.value || "") + '">' +
+    '<button class="rm" data-i18n-title="options.remove" title="删除">×</button>';
   row.querySelector(".h-op").value = (h && h.operation) || "set";
   const sync = () => {
     const op = row.querySelector(".h-op").value;
@@ -297,6 +299,7 @@ function addHeaderRow(h) {
   row.querySelector(".rm").onclick = () => { row.remove(); updateSummary(); };
   sync();
   $("#headerList").appendChild(row);
+  I18N.apply(row);
 }
 
 function readHeaderRows() {
@@ -318,10 +321,11 @@ function addMockHeaderRow(h) {
   row.className = "header-row";
   row.innerHTML =
     '<input class="h-name" placeholder="X-Mock" value="' + escapeHtml(h && h.name || "") + '">' +
-    '<input class="h-value" placeholder="值" value="' + escapeHtml(h && h.value || "") + '">' +
-    '<button class="rm" title="删除">×</button>';
+    '<input class="h-value" data-i18n-placeholder="options.headerValue" placeholder="值" value="' + escapeHtml(h && h.value || "") + '">' +
+    '<button class="rm" data-i18n-title="options.remove" title="删除">×</button>';
   row.querySelector(".rm").onclick = () => { row.remove(); updateSummary(); };
   $("#mockHeaderList").appendChild(row);
+  I18N.apply(row);
 }
 
 function readMockHeaders() {
@@ -359,21 +363,25 @@ function updateSummary() {
 
   if (errors.length) {
     box.className = "summary bad";
-    box.textContent = "配置有 " + errors.length + " 个问题，保存后将不会生效。";
+    box.textContent = T("options.summaryErrors", { n: errors.length });
   } else if (!grant.https && !grant.http) {
     box.className = "summary warn";
-    box.textContent = "未授权 " + host + "：保存后不会注入/编译，需在列表里点击「授权此域名」。";
+    box.textContent = T("options.summaryUnauthorized", { host: host });
   } else if (compiled.skipped === "mock") {
     box.className = "summary";
-    box.textContent = "Mock 不生成 DNR 规则：保存后在已授权的页面上由 fetch/XHR 拦截器返回伪造响应（延迟 " +
-      ((state.draft.action.mock && state.draft.action.mock.delayMs) || 0) + " ms）；仅覆盖页面脚本请求。";
+    box.textContent = T("options.summaryMock", { delay: (state.draft.action.mock && state.draft.action.mock.delayMs) || 0 });
   } else if (compiled.rules.length) {
     const onlyHeaders = state.draft.action.kind === "headers";
-    box.textContent = "将生成 " + compiled.rules.length + " 条 DNR 规则" +
-      (onlyHeaders ? "（仅请求头）" : compiled.rules.length > 1 ? "（转发 1 条 + 请求头 1 条）" : "（转发）") +
-      "，优先级 P" + (Number(state.draft.order) + 1) + "。";
+    const suffix = onlyHeaders
+      ? T("options.suffixHeaders")
+      : compiled.rules.length > 1 ? T("options.suffixBoth") : T("options.suffixForward");
+    box.textContent = T("options.summaryCompiled", {
+      n: compiled.rules.length,
+      suffix: suffix,
+      order: Number(state.draft.order) + 1
+    });
   } else {
-    box.textContent = "当前配置不会生成 DNR 规则。";
+    box.textContent = T("options.summaryNone");
   }
 
   const list = $("#errSummary");
@@ -444,7 +452,7 @@ async function saveRule() {
 async function deleteRule(id) {
   const rule = state.rules.find((r) => r.id === id);
   if (!rule) return;
-  if (!confirm("删除规则「" + (rule.name || rule.match.host + rule.match.path) + "」？")) return;
+  if (!confirm(T("options.confirmDelete", { name: rule.name || rule.match.host + rule.match.path }))) return;
   state.rules = state.rules.filter((r) => r.id !== id);
   state.rules.forEach((r, i) => { r.order = i; });
   await persist();
@@ -457,13 +465,13 @@ async function requestHost(host) {
   try {
     const granted = await chrome.permissions.request({ origins });
     if (!granted) {
-      $("#syncErr").textContent = "未获得 " + host + " 的授权，规则仍不会生效，可再次点击重试";
+      $("#syncErr").textContent = T("options.grantDenied", { host: host });
       return;
     }
     await refreshPerms();
     render();
   } catch (e) {
-    $("#syncErr").textContent = "授权失败：" + (e.message || e);
+    $("#syncErr").textContent = T("options.grantFailed", { msg: e.message || e });
   }
 }
 
@@ -528,7 +536,7 @@ $("#importBtn").onclick = () => {
         await refreshPerms();
         render();
       } catch (e) {
-        $("#syncErr").textContent = "导入失败：" + e.message;
+        $("#syncErr").textContent = T("options.importFailed", { msg: e.message });
       }
     };
     reader.readAsText(file);
@@ -568,7 +576,16 @@ chrome.storage.onChanged.addListener((changes, area) => {
   }
 });
 
-load().catch((e) => {
+// 等语言确定后再渲染，避免英文环境下首屏闪现中文
+I18N.ready.then(() => {
+  const langSelect = $("#langSelect");
+  I18N.getPref().then((pref) => { langSelect.value = pref; });
+  langSelect.addEventListener("change", async (e) => {
+    await I18N.setLang(e.target.value);
+    location.reload();
+  });
+  return load();
+}).catch((e) => {
   console.error("[ProxyPlugin] options 初始化失败", e);
-  $("#syncErr").textContent = "初始化失败：" + e.message;
+  $("#syncErr").textContent = T("options.initFailed", { msg: e.message });
 });

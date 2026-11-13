@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="zh-CN" data-i18n-doc-title="options.docTitle">
 <head>
 <meta charset="utf-8">
 <title>接口代理 — 配置</title>
@@ -36,6 +36,7 @@ button.text.danger:hover{color:var(--bad);background:var(--bad-bg);}
 .stats{display:flex;gap:10px;color:var(--muted);font-size:10.5px;}
 .stats b{font-family:var(--mono);color:var(--text);font-weight:600;}
 .spacer{flex:1;}
+.lang-select{height:27px;border:1px solid var(--line-2);border-radius:4px;background:#fff;color:var(--text);font-size:11px;padding:0 6px;font-family:inherit;}
 
 /* 工具栏 46px */
 .toolbar{height:46px;flex:0 0 46px;display:flex;align-items:center;gap:8px;padding:0 16px;background:var(--surface-2);border-bottom:1px solid var(--line);}
@@ -130,132 +131,140 @@ tbody tr.selected{background:var(--accent-bg);}
 <body>
 <header class="topbar">
   <div class="brand">AP</div>
-  <div class="title">接口代理</div>
+  <div class="title" data-i18n="options.appTitle">接口代理</div>
   <div class="stats" id="stats"></div>
   <div class="spacer"></div>
-  <button id="importBtn" class="text">导入</button>
-  <button id="exportBtn" class="text">导出</button>
-  <button id="newBtn" class="primary">新建规则</button>
+  <select id="langSelect" class="lang-select" data-i18n-title="options.langTitle" title="界面语言">
+    <option value="auto" data-i18n="options.langAuto">跟随系统</option>
+    <option value="zh">中文</option>
+    <option value="en">English</option>
+  </select>
+  <button id="importBtn" class="text" data-i18n="options.import">导入</button>
+  <button id="exportBtn" class="text" data-i18n="options.export">导出</button>
+  <button id="newBtn" class="primary" data-i18n="options.newRule">新建规则</button>
 </header>
 
 <div class="toolbar">
-  <input id="search" class="search" type="text" placeholder="搜索名称 / host / 路径 / 目标">
-  <button class="chip active" data-filter="all">全部 <span class="n" id="nAll">0</span></button>
-  <button class="chip" data-filter="on">生效 <span class="n" id="nOn">0</span></button>
-  <button class="chip" data-filter="off">已停用 <span class="n" id="nOff">0</span></button>
-  <button class="chip" data-filter="bad">异常 <span class="n" id="nBad">0</span></button>
-  <button class="chip" data-filter="pending">待授权 <span class="n" id="nPend">0</span></button>
+  <input id="search" class="search" type="text" data-i18n-placeholder="options.searchPlaceholder" placeholder="搜索名称 / host / 路径 / 目标">
+  <button class="chip active" data-filter="all"><span data-i18n="options.filterAll">全部</span> <span class="n" id="nAll">0</span></button>
+  <button class="chip" data-filter="on"><span data-i18n="options.filterOn">生效</span> <span class="n" id="nOn">0</span></button>
+  <button class="chip" data-filter="off"><span data-i18n="options.filterOff">已停用</span> <span class="n" id="nOff">0</span></button>
+  <button class="chip" data-filter="bad"><span data-i18n="options.filterBad">异常</span> <span class="n" id="nBad">0</span></button>
+  <button class="chip" data-filter="pending"><span data-i18n="options.filterPending">待授权</span> <span class="n" id="nPend">0</span></button>
 </div>
 
 <div class="main">
   <div class="table-wrap">
     <table>
       <thead><tr>
-        <th class="col-en">启用</th>
-        <th class="col-name">名称</th>
-        <th class="col-match">匹配地址</th>
-        <th class="col-type">类型</th>
-        <th class="col-target">重定向目标</th>
-        <th class="col-status">状态</th>
-        <th class="col-order">优先级</th>
-        <th class="col-act">操作</th>
+        <th class="col-en" data-i18n="options.colEnabled">启用</th>
+        <th class="col-name" data-i18n="options.colName">名称</th>
+        <th class="col-match" data-i18n="options.colMatch">匹配地址</th>
+        <th class="col-type" data-i18n="options.colType">类型</th>
+        <th class="col-target" data-i18n="options.colTarget">重定向目标</th>
+        <th class="col-status" data-i18n="options.colStatus">状态</th>
+        <th class="col-order" data-i18n="options.colOrder">优先级</th>
+        <th class="col-act" data-i18n="options.colActions">操作</th>
       </tr></thead>
       <tbody id="tbody"></tbody>
     </table>
     <div class="empty" id="empty">
-      <h3 id="emptyTitle">还没有代理规则</h3>
-      <p id="emptyDesc">新增规则后会编译为 declarativeNetRequest 动态规则，仅对已授权的域名生效。</p>
+      <h3 id="emptyTitle" data-i18n="options.emptyTitle">还没有代理规则</h3>
+      <p id="emptyDesc" data-i18n="options.emptyDesc">新增规则后会编译为 declarativeNetRequest 动态规则，仅对已授权的域名生效。</p>
       <div class="acts">
-        <button id="emptyClear">清除筛选</button>
-        <button id="emptyNew" class="primary">新建规则</button>
+        <button id="emptyClear" data-i18n="options.clearFilter">清除筛选</button>
+        <button id="emptyNew" class="primary" data-i18n="options.newRule">新建规则</button>
       </div>
     </div>
   </div>
   <div class="statusbar">
-    <span id="syncText">同步为 declarativeNetRequest 动态规则</span>
+    <span id="syncText" data-i18n="options.syncText">同步为 declarativeNetRequest 动态规则</span>
     <div class="spacer"></div>
     <span id="syncErr" class="err"></span>
-    <button id="retryBtn" class="retry text" style="display:none;">重试同步</button>
+    <button id="retryBtn" class="retry text" style="display:none;" data-i18n="options.retrySync">重试同步</button>
     <span id="syncAt"></span>
   </div>
 </div>
 
 <aside class="drawer" id="drawer">
-  <div class="drawer-head"><h2 id="drawerTitle">新建规则</h2></div>
+  <div class="drawer-head"><h2 id="drawerTitle" data-i18n="options.newRuleTitle">新建规则</h2></div>
   <div class="drawer-body">
     <div class="group">
-      <div class="group-title">基本信息</div>
-      <div class="field" data-field="name"><label>名称</label><input id="fName" type="text" placeholder="可选，例如 联调环境"></div>
-      <div class="checkline"><input id="fEnabled" type="checkbox" checked><label for="fEnabled" style="margin:0;">启用</label></div>
+      <div class="group-title" data-i18n="options.groupBasic">基本信息</div>
+      <div class="field" data-field="name"><label data-i18n="options.fieldName">名称</label><input id="fName" type="text" data-i18n-placeholder="options.namePlaceholder" placeholder="可选，例如 联调环境"></div>
+      <div class="checkline"><input id="fEnabled" type="checkbox" checked><label for="fEnabled" style="margin:0;" data-i18n="options.fieldEnabled">启用</label></div>
     </div>
 
     <div class="group">
-      <div class="group-title">匹配</div>
-      <div class="field" data-field="scheme"><label>协议</label>
-        <select id="fScheme"><option value="both">http + https</option><option value="https">仅 https</option><option value="http">仅 http</option></select>
+      <div class="group-title" data-i18n="options.groupMatch">匹配</div>
+      <div class="field" data-field="scheme"><label data-i18n="options.fieldScheme">协议</label>
+        <select id="fScheme"><option value="both">http + https</option><option value="https" data-i18n="options.schemeHttps">仅 https</option><option value="http" data-i18n="options.schemeHttp">仅 http</option></select>
       </div>
       <div class="field" data-field="host"><label>host</label><input id="fHost" type="text" placeholder="192.168.1.100 / www.example.com"><div class="err"></div></div>
-      <div class="field" data-field="path"><label>路径</label><input id="fPath" type="text" placeholder="/api/*"><div class="err"></div></div>
-      <div class="checkline"><input id="fCase" type="checkbox" checked><label for="fCase" style="margin:0;">区分大小写</label></div>
+      <div class="field" data-field="path"><label data-i18n="options.fieldPath">路径</label><input id="fPath" type="text" placeholder="/api/*"><div class="err"></div></div>
+      <div class="checkline"><input id="fCase" type="checkbox" checked><label for="fCase" style="margin:0;" data-i18n="options.fieldCaseSensitive">区分大小写</label></div>
     </div>
 
     <div class="group">
-      <div class="group-title">动作</div>
+      <div class="group-title" data-i18n="options.groupAction">动作</div>
       <div class="seg" id="kindSeg">
-        <button data-kind="prefix">路径替换</button>
-        <button data-kind="url">完整 URL</button>
-        <button data-kind="mock">Mock</button>
-        <button data-kind="headers">仅请求头</button>
+        <button data-kind="prefix" data-i18n="options.kindPrefix">路径替换</button>
+        <button data-kind="url" data-i18n="options.kindUrl">完整 URL</button>
+        <button data-kind="mock" data-i18n="options.kindMock">Mock</button>
+        <button data-kind="headers" data-i18n="options.kindHeaders">仅请求头</button>
       </div>
       <div style="height:8px;"></div>
-      <div class="field" data-field="targetPath"><label>替换后前缀</label><input id="fTargetPath" type="text" placeholder="/proxy/api"><div class="err"></div></div>
-      <div class="field" data-field="targetUrl"><label>完整目标地址</label><input id="fTargetUrl" type="text" placeholder="https://example.com/api"><div class="err"></div></div>
-      <div class="checkline"><input id="fKeepQuery" type="checkbox" checked><label for="fKeepQuery" style="margin:0;">保留原 query</label></div>
+      <div class="field" data-field="targetPath"><label data-i18n="options.fieldTargetPath">替换后前缀</label><input id="fTargetPath" type="text" placeholder="/proxy/api"><div class="err"></div></div>
+      <div class="field" data-field="targetUrl"><label data-i18n="options.fieldTargetUrl">完整目标地址</label><input id="fTargetUrl" type="text" placeholder="https://example.com/api"><div class="err"></div></div>
+      <div class="checkline"><input id="fKeepQuery" type="checkbox" checked><label for="fKeepQuery" style="margin:0;" data-i18n="options.fieldKeepQuery">保留原 query</label></div>
       <div id="mockWrap" style="display:none;">
-        <div class="hint" style="font-size:10.5px;line-height:1.7;color:var(--muted);background:#F7F8F8;border-left:2px solid var(--accent);padding:7px 9px;margin-bottom:9px;">
+        <div class="hint" data-i18n-html="options.mockHint" style="font-size:10.5px;line-height:1.7;color:var(--muted);background:#F7F8F8;border-left:2px solid var(--accent);padding:7px 9px;margin-bottom:9px;">
           仅拦截页面脚本发起的 <code>fetch</code> / <code>XMLHttpRequest</code>，命中即返回伪造响应，未命中严格透传。<br>
           不覆盖 <code>&lt;img&gt;</code> / <code>&lt;script src&gt;</code> 等资源加载、iframe 内部、Worker / Service Worker、WebSocket 握手。
         </div>
-        <div class="field" data-field="mockStatus"><label>状态码</label><input id="fMockStatus" type="text" value="200"><div class="err"></div></div>
-        <div class="field" data-field="mockDelay"><label>延迟（毫秒，0–10000）</label><input id="fMockDelay" type="text" value="0"><div class="err"></div></div>
-        <div class="field"><label>响应体类型</label><select id="fMockBodyType"><option value="json">JSON</option><option value="text">纯文本</option><option value="empty">空 body</option></select></div>
+        <div class="field" data-field="mockStatus"><label data-i18n="options.fieldMockStatus">状态码</label><input id="fMockStatus" type="text" value="200"><div class="err"></div></div>
+        <div class="field" data-field="mockDelay"><label data-i18n="options.fieldMockDelay">延迟（毫秒，0–10000）</label><input id="fMockDelay" type="text" value="0"><div class="err"></div></div>
+        <div class="field"><label data-i18n="options.fieldMockBodyType">响应体类型</label><select id="fMockBodyType"><option value="json">JSON</option><option value="text" data-i18n="options.bodyText">纯文本</option><option value="empty" data-i18n="options.bodyEmpty">空 body</option></select></div>
         <div class="field" data-field="mockType"><label>Content-Type</label><input id="fMockType" type="text" value="application/json"><div class="err"></div></div>
-        <div class="field" data-field="mockBody"><label>响应体</label><textarea id="fMockBody" placeholder='{"code":0}'></textarea><div class="err"></div></div>
-        <div class="field"><label>Mock 响应头</label></div>
+        <div class="field" data-field="mockBody"><label data-i18n="options.fieldMockBody">响应体</label><textarea id="fMockBody" placeholder='{"code":0}'></textarea><div class="err"></div></div>
+        <div class="field"><label data-i18n="options.fieldMockHeaders">Mock 响应头</label></div>
         <div id="mockHeaderList"></div>
-        <button id="addMockHeader" class="text" style="padding-left:0;">+ 添加响应头</button>
+        <button id="addMockHeader" class="text" style="padding-left:0;" data-i18n="options.addMockHeader">+ 添加响应头</button>
         <div class="err" id="mockHeaderErr" style="display:none;border-left:3px solid var(--bad);padding-left:7px;color:var(--bad);font-size:10.5px;margin-top:6px;"></div>
       </div>
     </div>
 
     <div class="group" id="headerGroup">
-      <div class="group-title">请求头</div>
+      <div class="group-title" data-i18n="options.groupHeaders">请求头</div>
       <div id="headerList"></div>
-      <button id="addHeader" class="text" style="padding-left:0;">+ 添加请求头</button>
+      <button id="addHeader" class="text" style="padding-left:0;" data-i18n="options.addHeader">+ 添加请求头</button>
       <div class="err" id="headerErr" style="display:none;border-left:3px solid var(--bad);padding-left:7px;color:var(--bad);font-size:10.5px;margin-top:6px;"></div>
     </div>
 
     <div class="group">
-      <div class="group-title">范围与备注</div>
+      <div class="group-title" data-i18n="options.groupScope">范围与备注</div>
       <div class="checkline"><input class="rt" type="checkbox" value="xmlhttprequest" checked><label style="margin:0;">xmlhttprequest</label></div>
       <div class="checkline"><input class="rt" type="checkbox" value="script"><label style="margin:0;">script</label></div>
       <div class="checkline"><input class="rt" type="checkbox" value="image"><label style="margin:0;">image</label></div>
       <div class="checkline"><input class="rt" type="checkbox" value="media"><label style="margin:0;">media</label></div>
       <div class="checkline"><input class="rt" type="checkbox" value="other"><label style="margin:0;">other</label></div>
-      <div class="field"><label>备注</label><input id="fNotes" type="text"></div>
+      <div class="field"><label data-i18n="options.fieldNotes">备注</label><input id="fNotes" type="text"></div>
     </div>
 
     <div id="compileSummary" class="summary"></div>
     <ul id="errSummary" class="errlist" style="display:none;"></ul>
   </div>
   <div class="drawer-foot">
-    <button id="deleteBtn" class="text danger" style="display:none;">删除</button>
+    <button id="deleteBtn" class="text danger" style="display:none;" data-i18n="options.delete">删除</button>
     <div class="spacer"></div>
-    <button id="cancelBtn">取消</button>
-    <button id="saveBtn" class="primary">保存</button>
+    <button id="cancelBtn" data-i18n="options.cancel">取消</button>
+    <button id="saveBtn" class="primary" data-i18n="options.save">保存</button>
   </div>
 </aside>
 
+<script src="i18n.js"></script>
+<script src="i18n-options.js"></script>
+<script src="i18n-model.js"></script>
 <script src="rules-model.js"></script>
 <script src="options.js"></script>
 </body>

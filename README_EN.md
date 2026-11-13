@@ -48,6 +48,10 @@ A Chrome (Manifest V3) browser extension for frontend development, QA, and API d
 
 ## Usage
 
+### Interface language
+
+The top-right corner of the settings page offers **System / 中文 / English**. Changing it reloads the page and applies the same language to the settings page, the popup and the DevTools panel. The default "System" follows the browser UI language and falls back to Chinese for other locales.
+
 ### Authorize a domain
 
 Rules only apply to authorized domains. After the first rule for a domain is added, the list shows "Pending authorization":

@@ -1,6 +1,9 @@
 // 规则模型：迁移 / 校验 / 编译为 declarativeNetRequest 规则。
 // 纯函数、无 chrome API 依赖，可被 options.js / popup.js / sw.js 共用，也可在 node 里单测。
 (function () {
+  // 兼容取词：浏览器 / Service Worker 中走全局 I18N；Node 单测环境没有 I18N，直接回落为 key
+  const T = (key, params) => (typeof I18N !== "undefined" && I18N.t ? I18N.t(key, params) : key);
+
   const DEFAULT_RESOURCE_TYPES = ["xmlhttprequest", "other"];
   const MAX_RULES = 250;
   const MAX_DNR_RULES = 500;
@@ -189,11 +192,11 @@
 
   function validateHost(host) {
     const h = String(host || "").trim();
-    if (!h) return "host 不能为空，且不能包含协议或路径，例如 192.168.1.100";
+    if (!h) return T("model.hostEmpty");
     if (/^(https?:)?\/\//i.test(h) || h.indexOf("/") >= 0 || h.indexOf(" ") >= 0) {
-      return "host 不能包含协议或路径，例如 192.168.1.100";
+      return T("model.hostProtocol");
     }
-    if (!/^(\*\.)?[a-z0-9.-]+$/.test(h.toLowerCase())) return "host 只允许字母、数字、. 和 -，左侧通配写法为 *.example.com";
+    if (!/^(\*\.)?[a-z0-9.-]+$/.test(h.toLowerCase())) return T("model.hostCharset");
     return null;
   }
 
@@ -207,63 +210,63 @@
 
     const path = String(m.path || "");
     if (!path) {
-      errors.push({ field: "path", message: "路径不能为空，例如 /api/sessions" });
+      errors.push({ field: "path", message: T("model.pathEmpty") });
     } else if (path.charAt(0) !== "/") {
-      errors.push({ field: "path", message: "路径必须以 / 开头，例如 /api/sessions" });
+      errors.push({ field: "path", message: T("model.pathSlash") });
     } else {
       if (path.indexOf("?") >= 0 || path.indexOf("#") >= 0) {
-        errors.push({ field: "path", message: "路径里不能带查询参数" });
+        errors.push({ field: "path", message: T("model.pathNoQuery") });
       } else if (path.indexOf("*") >= 0 && (path.indexOf("*") !== path.length - 1 || path.indexOf("**") >= 0)) {
-        errors.push({ field: "path", message: "* 只能作为末尾通配，例如 /api/*" });
+        errors.push({ field: "path", message: T("model.pathWildcard") });
       }
     }
 
     if (a.kind === "prefix") {
       if (!a.targetPath || a.targetPath.charAt(0) !== "/") {
-        errors.push({ field: "targetPath", message: "替换后的前缀必须以 / 开头" });
+        errors.push({ field: "targetPath", message: T("model.targetPathSlash") });
       }
     } else if (a.kind === "url") {
       const t = String(a.targetUrl || "");
       if (!/^https?:\/\/[^/\s]+/i.test(t)) {
-        errors.push({ field: "targetUrl", message: "完整目标地址必须是 http:// 或 https:// 开头的绝对地址" });
+        errors.push({ field: "targetUrl", message: T("model.targetUrlAbsolute") });
       } else if (a.keepQuery && t.indexOf("?") >= 0) {
-        errors.push({ field: "targetUrl", message: "目标地址已包含参数，保留原 query 会产生重复参数" });
+        errors.push({ field: "targetUrl", message: T("model.targetUrlQueryConflict") });
       }
     } else if (a.kind === "mock") {
       const mk = normalizeMock(a.mock);
       if (mk.status < 200 || mk.status > 599) {
-        errors.push({ field: "mockStatus", message: "Mock 状态码需在 200–599（页面 Response 不接受其它值）" });
+        errors.push({ field: "mockStatus", message: T("model.mockStatusRange") });
       }
       const rawDelay = a.mock ? a.mock.delayMs : undefined;
       const hasDelay = rawDelay !== undefined && rawDelay !== null && rawDelay !== "";
       if (hasDelay && (!Number.isFinite(Number(rawDelay)) || Number(rawDelay) < 0 || Number(rawDelay) > 10000)) {
-        errors.push({ field: "mockDelay", message: "延迟需为 0–10000 的整数（毫秒）" });
+        errors.push({ field: "mockDelay", message: T("model.mockDelayRange") });
       }
       if (mk.bodyType === "json") {
         try {
           JSON.parse(mk.body);
         } catch (e) {
-          errors.push({ field: "mockBody", message: "body 不是合法 JSON：" + e.message });
+          errors.push({ field: "mockBody", message: T("model.mockBodyJson", { msg: e.message }) });
         }
       } else if (mk.bodyType === "text" && !mk.body.trim()) {
-        errors.push({ field: "mockBody", message: "纯文本响应体不能为空；不需要 body 请选择「空 body」" });
+        errors.push({ field: "mockBody", message: T("model.mockBodyEmpty") });
       }
       const seenResp = {};
       mk.headers.forEach((h, i) => {
         const name = String(h.name || "").trim();
         if (!/^[!#$%&'*+.^_`|~0-9A-Za-z-]+$/.test(name)) {
-          errors.push({ field: "mockHeaders", message: "第 " + (i + 1) + " 个响应头名称不合法" });
+          errors.push({ field: "mockHeaders", message: T("model.mockHeaderNameInvalid", { index: i + 1 }) });
           return;
         }
         const lower = name.toLowerCase();
         if (FORBIDDEN_RESPONSE_HEADERS.indexOf(lower) >= 0) {
-          errors.push({ field: "mockHeaders", message: name + " 不能由页面脚本设置" });
+          errors.push({ field: "mockHeaders", message: T("model.mockHeaderForbidden", { name: name }) });
         }
-        if (seenResp[lower]) errors.push({ field: "mockHeaders", message: "响应头 " + name + " 重复" });
+        if (seenResp[lower]) errors.push({ field: "mockHeaders", message: T("model.mockHeaderDuplicate", { name: name }) });
         seenResp[lower] = true;
       });
       if (mk.bodyType !== "empty" && !mk.contentType && !mk.headers.some((h) => h.name.toLowerCase() === "content-type")) {
-        errors.push({ field: "mockType", message: "需要 Content-Type（JSON 建议 application/json）" });
+        errors.push({ field: "mockType", message: T("model.mockContentType") });
       }
     }
 
@@ -271,47 +274,47 @@
     if (a.kind === "prefix" && !errors.some((e) => e.field === "targetPath") && !errors.some((e) => e.field === "path")) {
       const base = path.replace(/\*$/, "");
       if (base && String(a.targetPath).replace(/\*$/, "").indexOf(base) === 0) {
-        errors.push({ field: "targetPath", message: "重定向后的地址仍会命中本规则，会导致循环" });
+        errors.push({ field: "targetPath", message: T("model.selfLoop") });
       }
     }
 
     const headers = Array.isArray(a.headers) ? a.headers : [];
     if (a.kind === "mock" && headers.length) {
-      errors.push({ field: "headers", message: "Mock 请求不会发出，请求头不会生效；请改配到 Mock 响应头" });
+      errors.push({ field: "headers", message: T("model.mockHeadersIgnored") });
     }
     // 路径替换/完整 URL 均由 DNR redirect 实现，重定向产生的新请求不会再应用 modifyHeaders（E-01 实测）
     if ((a.kind === "prefix" || a.kind === "url") && headers.length) {
-      errors.push({ field: "headers", message: "该类型通过重定向实现，浏览器不会给重定向后的请求追加请求头；请拆分规则或改用其他方式" });
+      errors.push({ field: "headers", message: T("model.redirectHeadersIgnored") });
     }
     if (a.kind === "headers" && !headers.length) {
-      errors.push({ field: "headers", message: "「仅请求头」类型至少需要配置一条请求头" });
+      errors.push({ field: "headers", message: T("model.headersRequired") });
     }
     const seen = {};
     headers.forEach((h, i) => {
       const name = String(h.name || "").trim();
       const op = h.operation || "set";
       if (!name) {
-        errors.push({ field: "headers", message: "第 " + (i + 1) + " 个请求头缺少名称" });
+        errors.push({ field: "headers", message: T("model.headerNameMissing", { index: i + 1 }) });
         return;
       }
       if (!/^[!#$%&'*+.^_`|~0-9A-Za-z-]+$/.test(name)) {
-        errors.push({ field: "headers", message: "请求头名称 " + name + " 不是合法的 header token" });
+        errors.push({ field: "headers", message: T("model.headerNameInvalid", { name: name }) });
       }
       if (headerIsForbidden(name)) {
-        errors.push({ field: "headers", message: name + " 由浏览器控制，不能通过此工具修改" });
+        errors.push({ field: "headers", message: T("model.headerForbidden", { name: name }) });
       }
       const lower = name.toLowerCase();
-      if (seen[lower]) errors.push({ field: "headers", message: "请求头 " + name + " 重复" });
+      if (seen[lower]) errors.push({ field: "headers", message: T("model.headerDuplicate", { name: name }) });
       seen[lower] = true;
       if (op !== "remove" && !String(h.value || "").length) {
-        errors.push({ field: "headers", message: "请求头 " + name + " 的值为空" });
+        errors.push({ field: "headers", message: T("model.headerValueEmpty", { name: name }) });
       }
       if (op === "append" && APPENDABLE_HEADERS.indexOf(lower) < 0) {
-        errors.push({ field: "headers", message: name + " 不在 Chrome 的 append 白名单内，请改用 set" });
+        errors.push({ field: "headers", message: T("model.headerAppendNotAllowed", { name: name }) });
       }
       // E-03 实测：Cookie 的 set/remove 会被静默忽略，仅 append 生效
       if (lower === "cookie" && op !== "append") {
-        errors.push({ field: "headers", message: "Chrome 不会应用 Cookie 的 set/remove，仅支持 append" });
+        errors.push({ field: "headers", message: T("model.cookieAppendOnly") });
       }
     });
 
@@ -321,7 +324,7 @@
         && normalizeHost(r.match.host) === normalizeHost(rule.match.host)
         && String(r.match.path) === String(rule.match.path)
         && (r.match.scheme || "both") === (rule.match.scheme || "both"));
-      if (dup) errors.push({ field: "host", message: "与「" + (dup.name || dup.match.host + dup.match.path) + "」完全重复" });
+      if (dup) errors.push({ field: "host", message: T("model.duplicateRule", { name: dup.name || dup.match.host + dup.match.path }) });
     }
 
     return errors;
@@ -341,7 +344,7 @@
       return { rules: [], errors: vErrors.map((e) => e.message), skipped: "invalid" };
     }
 
-    if (index >= MAX_RULES) return { rules: [], errors: ["超出 " + MAX_RULES + " 条规则上限"], skipped: "limit" };
+    if (index >= MAX_RULES) return { rules: [], errors: [T("model.tooManyRules", { max: MAX_RULES })], skipped: "limit" };
 
     if (a.kind === "mock") {
       // Mock 由页面侧拦截实现，v0.7 仍未落地，不生成 DNR，避免"看起来生效"
@@ -419,7 +422,7 @@
       if (badHeader.length) {
         errors.push(...badHeader.map((e) => e.message));
       } else if (!rt.length) {
-        errors.push("规则资源类型只剩 websocket，请求头部分不生效");
+        errors.push(T("model.websocketOnly"));
       } else {
         dnr.push({
           id: 2000 + index,

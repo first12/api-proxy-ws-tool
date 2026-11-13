@@ -88,7 +88,8 @@ function sizeText(bytes) {
 
 function timeText(ms, withMs) {
   const d = new Date(ms);
-  const base = d.toLocaleTimeString("zh-CN", { hour12: false });
+  // 时间格式跟随界面语言：英文环境用 en-US，其余用 zh-CN
+  const base = d.toLocaleTimeString(I18N.lang === "en" ? "en-US" : "zh-CN", { hour12: false });
   return withMs ? base + "." + String(d.getMilliseconds()).padStart(3, "0") : base;
 }
 
@@ -146,15 +147,15 @@ function renderConnList() {
         '<span class="conn-url" title="' + escapeHtml(c.url) + '">' + escapeHtml(urlShort(c.url)) + '</span>' +
       '</div>' +
       '<div class="conn-line2">' +
-        '<span>' + (c.openedAt ? timeText(c.openedAt) : "建连中") + '</span>' +
-        '<span>' + frames.length + ' 帧</span>' +
-        (c.truncated ? '<span class="trunc">截断</span>' : "") +
-        '<span class="code">' + (c.closedAt ? ("code " + (c.closeCode == null ? "-" : c.closeCode)) : "进行中") + '</span>' +
+        '<span>' + (c.openedAt ? timeText(c.openedAt) : I18N.t("panel.connecting")) + '</span>' +
+        '<span>' + I18N.t("panel.frameCount", { n: frames.length }) + '</span>' +
+        (c.truncated ? '<span class="trunc">' + escapeHtml(I18N.t("panel.truncatedShort")) + '</span>' : "") +
+        '<span class="code">' + (c.closedAt ? ("code " + (c.closeCode == null ? "-" : c.closeCode)) : I18N.t("panel.inProgress")) + '</span>' +
       '</div>';
     listEl.appendChild(el);
   });
 
-  document.getElementById("loadInfo").textContent = "已加载 " + shown.length + " / " + rows.length + " 条";
+  document.getElementById("loadInfo").textContent = I18N.t("panel.loadInfo", { shown: shown.length, total: rows.length });
   document.getElementById("loadMore").disabled = shown.length >= rows.length;
   listEl.scrollTop = prevScroll;
 }
@@ -163,7 +164,7 @@ function renderHostOptions() {
   const sel = document.getElementById("hostSel");
   const hosts = Array.from(new Set(Array.from(connMeta.values()).map((c) => hostOf(c.url)).filter(Boolean)));
   const current = ui.host;
-  sel.innerHTML = '<option value="">全部 host</option>' + hosts.map((h) =>
+  sel.innerHTML = '<option value="">' + escapeHtml(I18N.t("panel.allHosts")) + '</option>' + hosts.map((h) =>
     '<option value="' + escapeHtml(h) + '"' + (h === current ? " selected" : "") + ">" + escapeHtml(h) + "</option>").join("");
 }
 
@@ -184,7 +185,7 @@ function dirCounts() {
 
 function renderDirChips() {
   const c = dirCounts();
-  const items = [["all", "全部"], ["in", "in"], ["out", "out"], ["open", "open"]];
+  const items = [["all", I18N.t("panel.dirAll")], ["in", "in"], ["out", "out"], ["open", "open"]];
   document.getElementById("dirChips").innerHTML = items.map(([k, label]) =>
     '<button class="dir-chip' + (ui.dir === k ? " active" : "") + '" data-dir="' + k + '">' + label + " " + c[k] + "</button>").join("");
 }
@@ -193,16 +194,16 @@ function renderMainHead() {
   const c = selectedConn();
   const head = document.getElementById("mainHead");
   if (!c) {
-    head.innerHTML = '<div class="l1"><span class="url">左侧选择一个连接</span></div>';
+    head.innerHTML = '<div class="l1"><span class="url">' + escapeHtml(I18N.t("panel.selectConnHint")) + '</span></div>';
     return;
   }
   const frames = connFrames(c.id);
   const l2 = [
-    "打开 " + (c.openedAt ? timeText(c.openedAt, true) : "-"),
-    "关闭 " + (c.closedAt ? timeText(c.closedAt, true) : "进行中"),
+    I18N.t("panel.openedAt", { time: c.openedAt ? timeText(c.openedAt, true) : "-" }),
+    I18N.t("panel.closedAt", { time: c.closedAt ? timeText(c.closedAt, true) : I18N.t("panel.inProgress") }),
     "closeCode " + (c.closeCode == null ? "-" : c.closeCode),
-    frames.length + " 帧",
-    c.truncated ? "已截断" : "未截断"
+    I18N.t("panel.frameCount", { n: frames.length }),
+    c.truncated ? I18N.t("panel.truncatedYes") : I18N.t("panel.truncatedNo")
   ].join(" · ");
   head.innerHTML =
     '<div class="l1"><span class="dot ' + (c.closedAt ? "" : "ok") + '"></span><span class="id">' + escapeHtml(c.id) + '</span>' +
@@ -219,7 +220,7 @@ function frameVisible(f) {
 
 function payloadText(f) {
   if (f.kind === "binary") {
-    return f.pending ? "(读取中)" : "bin · " + sizeText(f.byteLength) + (f.truncated ? " · truncated" : "");
+    return f.pending ? I18N.t("panel.reading") : "bin · " + sizeText(f.byteLength) + (f.truncated ? I18N.t("panel.truncatedMarker") : "");
   }
   return f.payload;
 }
@@ -238,7 +239,7 @@ function renderRow(f) {
     '<span><span class="dir ' + escapeHtml(f.direction) + '">' + escapeHtml(f.direction) + "</span></span>" +
     '<span class="len' + (String(f.payload || "").length > 600 ? " big" : "") + '">' + escapeHtml(lenText) + "</span>" +
     '<span class="payload' + (f.kind === "binary" ? " bin" : "") + '" title="' + escapeHtml(payloadText(f)) + '">' + escapeHtml(payloadText(f)) + "</span>" +
-    '<button class="text" data-seq="' + f.seq + '"' + (isWide(f) ? "" : ' style="visibility:hidden"') + ">查看</button>";
+    '<button class="text" data-seq="' + f.seq + '"' + (isWide(f) ? "" : ' style="visibility:hidden"') + ">" + escapeHtml(I18N.t("panel.view")) + "</button>";
 
   if (f.pending) {
     pendingRows.set(f.seq, {
@@ -278,7 +279,9 @@ function updateFrameFoot() {
   const total = connFrames(selectedId).length;
   const visible = renderedSeqList.length;
   document.getElementById("frameFoot").textContent = c
-    ? "显示 " + visible + " / " + total + " 帧 · 缓冲上限 2000 帧" + (c.truncated ? " · 该连接已被截断" : "") + (ui.follow ? " · 跟随最新" : " · 已暂停滚动")
+    ? I18N.t("panel.frameFoot", { visible: visible, total: total }) +
+      (c.truncated ? I18N.t("panel.frameFootTruncated") : "") +
+      (ui.follow ? I18N.t("panel.frameFootFollowing") : I18N.t("panel.frameFootPaused"))
     : "";
 }
 
@@ -287,20 +290,20 @@ function updateEmptyMain() {
   const c = selectedConn();
   if (!c) {
     empty.style.display = "flex";
-    document.getElementById("emptyTitle").textContent = "左侧选择一个连接";
-    document.getElementById("emptyDesc").textContent = "页面里建立 WebSocket 后，连接会出现在左侧索引。";
+    document.getElementById("emptyTitle").textContent = I18N.t("panel.selectConnHint");
+    document.getElementById("emptyDesc").textContent = I18N.t("panel.emptyDesc");
     return;
   }
   const total = connFrames(selectedId).length;
   const visible = renderedSeqList.length;
   if (total === 0) {
     empty.style.display = "flex";
-    document.getElementById("emptyTitle").textContent = "该连接没有帧";
-    document.getElementById("emptyDesc").textContent = "可能在建连阶段就关闭了。";
+    document.getElementById("emptyTitle").textContent = I18N.t("panel.emptyTitleNoFrames");
+    document.getElementById("emptyDesc").textContent = I18N.t("panel.emptyDescNoFrames");
   } else if (visible === 0) {
     empty.style.display = "flex";
-    document.getElementById("emptyTitle").textContent = "当前筛选条件下没有帧";
-    document.getElementById("emptyDesc").textContent = "调整方向或 payload 过滤后再试。";
+    document.getElementById("emptyTitle").textContent = I18N.t("panel.emptyTitleFiltered");
+    document.getElementById("emptyDesc").textContent = I18N.t("panel.emptyDescFiltered");
   } else {
     empty.style.display = "none";
   }
@@ -414,7 +417,7 @@ function updateConnCounts() {
     const line2 = el.querySelector(".conn-line2");
     if (line2) {
       const span = line2.querySelectorAll("span")[1];
-      if (span) span.textContent = frames.length + " 帧";
+      if (span) span.textContent = I18N.t("panel.frameCount", { n: frames.length });
     }
   });
 }
@@ -422,7 +425,7 @@ function updateConnCounts() {
 function pull() {
   readBuffer((incoming) => {
     if (incoming.frames.length === 0 && incoming.connections.length === 0 && !lastSeq) {
-      document.getElementById("hookHint").textContent = "未采集到 WS，可能是页面无 WebSocket 或注入被页面 CSP 阻止";
+      document.getElementById("hookHint").textContent = I18N.t("panel.hookHint");
     } else {
       document.getElementById("hookHint").textContent = "";
     }
@@ -523,7 +526,7 @@ document.getElementById("payloadSearch").addEventListener("input", (e) => {
 
 document.getElementById("followBtn").addEventListener("click", () => {
   ui.follow = !ui.follow;
-  document.getElementById("followBtn").textContent = ui.follow ? "跟随最新" : "已暂停滚动";
+  document.getElementById("followBtn").textContent = ui.follow ? I18N.t("panel.followLatest") : I18N.t("panel.paused");
   if (ui.follow) frameListEl().scrollTop = frameListEl().scrollHeight;
   updateFrameFoot();
 });
@@ -533,7 +536,7 @@ frameListEl().addEventListener("scroll", () => {
   const atBottom = el.scrollTop + el.clientHeight >= el.scrollHeight - 8;
   if (ui.follow && !atBottom) {
     ui.follow = false;
-    document.getElementById("followBtn").textContent = "已暂停滚动";
+    document.getElementById("followBtn").textContent = I18N.t("panel.paused");
     updateFrameFoot();
   }
 });
@@ -548,13 +551,13 @@ frameListEl().addEventListener("click", (e) => {
 
 function openOverlay(frame) {
   const body = document.getElementById("ovBody");
-  document.getElementById("ovTitle").textContent = "帧 · " + timeText(frame.ts, true) + " · " + frame.direction;
+  document.getElementById("ovTitle").textContent = I18N.t("panel.overlayTitle", { time: timeText(frame.ts, true), dir: frame.direction });
   if (frame.kind === "binary") {
-    document.getElementById("ovMeta").textContent = sizeText(frame.byteLength) + (frame.truncated ? " · 预览仅前 16 字节" : "");
-    body.innerHTML = '<code>' + escapeHtml(frame.previewBase64 || "(无预览)") + '</code>' +
-      '<div class="bin-hint">疑似二进制协议，建议在代码侧解码</div>';
+    document.getElementById("ovMeta").textContent = sizeText(frame.byteLength) + (frame.truncated ? I18N.t("panel.previewLimit") : "");
+    body.innerHTML = '<code>' + escapeHtml(frame.previewBase64 || I18N.t("panel.noPreview")) + '</code>' +
+      '<div class="bin-hint">' + escapeHtml(I18N.t("panel.binHint")) + '</div>';
   } else {
-    document.getElementById("ovMeta").textContent = String(frame.payload || "").length + " 字符 · 上限 8000";
+    document.getElementById("ovMeta").textContent = I18N.t("panel.textMeta", { n: String(frame.payload || "").length });
     body.textContent = frame.payload || "";
   }
   document.getElementById("overlay").classList.add("show");
@@ -659,12 +662,16 @@ document.getElementById("exportBtn").onclick = () => {
   });
 };
 
-chrome.devtools.network.onNavigated.addListener(() => {
-  currentPage = null;
-  resetAll();
-  setTimeout(() => injectAll(), 500);
-});
+// ---------- 初始化 ----------
+// 等待语言字典就绪后再启动注入与轮询，保证首屏与后续动态渲染都使用当前语言
+I18N.ready.then(() => {
+  chrome.devtools.network.onNavigated.addListener(() => {
+    currentPage = null;
+    resetAll();
+    setTimeout(() => injectAll(), 500);
+  });
 
-injectAll();
-pull();
-setInterval(pull, 800);
+  injectAll();
+  pull();
+  setInterval(pull, 800);
+});

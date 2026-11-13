@@ -1,6 +1,10 @@
 // MV3 service worker：把 proxyRules 编译为 declarativeNetRequest 动态规则。
 // MV3 的 service worker 里 fetch 监听不拦截网页请求，因此这里不再做 fetch 劫持。
-importScripts("rules-model.js");
+// 加载顺序：先 i18n.js，再字典 i18n-model.js，最后 rules-model.js
+importScripts("i18n.js", "i18n-model.js", "rules-model.js");
+
+// 兼容取词：i18n 未就绪或缺失时直接回落为 key
+const T = (key, params) => (typeof I18N !== "undefined" && I18N.t ? I18N.t(key, params) : key);
 
 const STORAGE_KEY = "proxyRules";
 const STATUS_KEY = "proxySyncStatus";
@@ -57,7 +61,7 @@ async function unregisterMockScripts() {
 }
 
 async function syncMockScripts(rules, grantedMap) {
-  if (!chrome.scripting) return { registered: 0, error: "当前环境没有 chrome.scripting" };
+  if (!chrome.scripting) return { registered: 0, error: T("model.noScripting") };
   try {
     await unregisterMockScripts();
     const matches = [];
@@ -123,7 +127,7 @@ async function syncRules() {
       try {
         await chrome.declarativeNetRequest.updateDynamicRules({ removeRuleIds, addRules: [] });
       } catch (clearError) {
-        lastSyncError += " | 清理失败：" + String(clearError && clearError.message ? clearError.message : clearError);
+        lastSyncError += " | " + T("model.clearFailed", { msg: String(clearError && clearError.message ? clearError.message : clearError) });
       }
       for (const rule of finalRules) {
         try {
