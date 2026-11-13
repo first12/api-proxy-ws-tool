@@ -87,6 +87,7 @@
     var url = urlOf(input);
     var rule = RM.selectMockRule(url, state.table);
     if (!rule) return state.origFetch.apply(this, arguments);
+    try { console.info("[Mock] fetch 命中规则", rule.id, rule.name, url); } catch (e) {}
     var signal = (init && init.signal) || (input && typeof input === "object" && input.signal) || null;
     return respond(url, rule.response, signal);
   }
@@ -210,6 +211,7 @@
       var savedSend = state.xhrSaved && state.xhrSaved.send;
       return (savedSend ? savedSend.fn : this.send).apply(this, arguments);
     }
+    try { console.info("[Mock] XHR 命中规则", rule.id, rule.name, info.method, info.url); } catch (e) {}
 
     var xhr = this;
     var resp = rule.response;
@@ -309,6 +311,7 @@
     var list = Array.isArray(table) ? table : [];
     state.table = list;
     state.enabled = on !== false && list.length > 0;
+    try { console.info("[Mock] 配置已应用：规则 " + list.length + " 条，拦截" + (state.enabled ? "开启" : "关闭"), list.map(function (r) { return r.match.host + r.match.path; })); } catch (e) {}
     if (state.enabled) install();
     else {
       uninstall();
