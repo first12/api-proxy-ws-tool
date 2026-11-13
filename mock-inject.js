@@ -93,6 +93,11 @@
     try { return new URL(String(url), location.href).href; } catch (e) { return String(url); }
   }
 
+  function preview(text) {
+    var s = text == null ? "" : String(text);
+    return s.length > 200 ? s.slice(0, 200) + "…(" + s.length + " 字符)" : s;
+  }
+
   function wait(ms, signal) {
     if (!ms) return Promise.resolve();
     return new Promise(function (resolve, reject) {
@@ -146,52 +151,8 @@
     if (!rule) return state.origFetch.apply(this, arguments);
     try { console.info("[Mock] fetch 命中规则", rule.id, rule.name, url); } catch (e) {}
     try { console.info("[Mock] 返回 mock 数据 → " + rule.response.status + " " + (rule.response.contentType || ""), rule.response.bodyType === "empty" ? "(空 body)" : preview(rule.response.body)); } catch (e) {}
-    try { if (/^get$/i.test(String((init && init.method) || (input && input.method) || "get"))) shadowFetch(url, init); } catch (e) {}
     var signal = (init && init.signal) || (input && typeof input === "object" && input.signal) || null;
     return respond(url, rule.response, signal);
-  }
-
-  // ---------- 影子透传：命中 mock 后再悄悄发一次真请求，把原接口返回打印出来 ----------
-  // 仅对 GET 生效（避免 POST 等副作用请求被重复执行）；请求发往真实网络，不经过 mock 拦截。
-
-  function preview(text) {
-    var s = text == null ? "" : String(text);
-    return s.length > 200 ? s.slice(0, 200) + "…(" + s.length + " 字符)" : s;
-  }
-
-  function logOriginalResponse(tag, status, contentType, text) {
-    try {
-      console.info("[Mock] 原接口真实返回（" + tag + "）→ " + status + " " + (contentType || "") + " " + preview(text));
-      console.log("[Mock] 原始响应完整内容：", text);
-    } catch (e) {}
-  }
-
-  function shadowFetch(url, init) {
-    try {
-      state.origFetch(url, init).then(function (res) {
-        var clone = res.clone();
-        return clone.text().then(function (text) {
-          logOriginalResponse("fetch", res.status, clone.headers.get("content-type"), text);
-        });
-      }).catch(function (err) {
-        try { console.info("[Mock] 原接口请求失败（fetch）→", String(err)); } catch (e) {}
-      });
-    } catch (e) {}
-  }
-
-  function shadowXhr(method, url, async, body) {
-    try {
-      var x = new XMLHttpRequest();
-      var saved = state.xhrSaved;
-      // 用还原后的原生方法发请求，避免被自身拦截形成递归
-      (saved && saved.open ? saved.open.fn : XMLHttpRequest.prototype.open).call(x, method, url, async !== false);
-      x.onreadystatechange = function () {
-        if (x.readyState !== 4) return;
-        logOriginalResponse("xhr", x.status, x.getResponseHeader("content-type"), x.responseText);
-        x.onreadystatechange = null;
-      };
-      (saved && saved.send ? saved.send.fn : XMLHttpRequest.prototype.send).call(x, body);
-    } catch (e) {}
   }
 
   // ---------- XMLHttpRequest ----------
@@ -315,7 +276,6 @@
     }
     try { console.info("[Mock] XHR 命中规则", rule.id, rule.name, info.method, info.url); } catch (e) {}
     try { console.info("[Mock] 返回 mock 数据 → " + rule.response.status + " " + (rule.response.contentType || ""), rule.response.bodyType === "empty" ? "(空 body)" : preview(rule.response.body)); } catch (e) {}
-    try { if (/^get$/i.test(String(info.method || ""))) shadowXhr(info.method, info.url, info.async, arguments[0]); } catch (e) {}
 
     var xhr = this;
     var resp = rule.response;
