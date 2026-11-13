@@ -1,17 +1,22 @@
 // MAIN world Mock 引擎：拦截页面脚本发起的 fetch / XMLHttpRequest。
 // 由 mock-bridge.js（ISOLATED）或 DevTools 面板下发配置；未命中任何 mock 规则时严格透传原生实现。
+
+// ══════════ 配置 ══════════
+// 调试日志开关：置 true 后输出命中规则 / mock 数据 / 配置应用等诊断日志
+// （也可不改代码，在页面控制台执行 window.__MOCK_DEBUG__ = true 后刷新临时开启）
+var MOCK_DEBUG = false;
+
 (function () {
   if (window.__MOCK_VERSION__ === 4) return;
   window.__MOCK_VERSION__ = 4;
 
-  var RM = window.RuleModel;
-  try { delete window.RuleModel; } catch (e) {}
-  // 调试日志开关：代码配置（置 true 输出命中/配置日志），也可由页面临时 window.__MOCK_DEBUG__ = true 打开
-  var DEBUG = window.__MOCK_DEBUG__ === true;
+  var DEBUG = window.__MOCK_DEBUG__ === true || MOCK_DEBUG === true;
   function dlog() {
     if (!DEBUG) return;
     try { console.info.apply(console, ["[Mock]"].concat([].slice.call(arguments))); } catch (e) {}
   }
+  var RM = window.RuleModel;
+  try { delete window.RuleModel; } catch (e) {}
   if (!RM) {
     // 引擎只依赖匹配逻辑，且收到的表已由桥接构建好；内置一份避免对 rules-model.js 注入顺序的依赖
     try { console.warn("[Mock] RuleModel 未加载，使用内置匹配逻辑"); } catch (e) {}

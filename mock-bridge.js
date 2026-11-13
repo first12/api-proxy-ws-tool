@@ -1,5 +1,11 @@
 // ISOLATED world 桥接：读 storage 里的规则，把 mock 表下发给 MAIN world。
 // MAIN world 拿不到 chrome.storage，因此所有热更新都从这里转发。
+
+// ══════════ 配置 ══════════
+// 调试日志开关：置 true 后输出桥接加载 / 配置下发 / 引擎就绪等诊断日志
+// （也可不改代码，在页面控制台执行 window.__MOCK_DEBUG__ = true 后刷新临时开启）
+var MOCK_BRIDGE_DEBUG = false;
+
 (function () {
   if (window.__MOCK_BRIDGE__ === 4) return;
   window.__MOCK_BRIDGE__ = 4;
@@ -9,8 +15,7 @@
   var STATUS_KEY = "proxySyncStatus";
   var RM = globalThis.RuleModel;
 
-  // 调试日志开关：代码配置（置 true 输出全链路诊断日志），也可由页面临时 window.__MOCK_DEBUG__ = true 打开
-  var DEBUG = window.__MOCK_DEBUG__ === true;
+  var DEBUG = window.__MOCK_DEBUG__ === true || MOCK_BRIDGE_DEBUG === true;
   function dlog() {
     if (!DEBUG) return;
     try { console.info.apply(console, ["[MockBridge]"].concat([].slice.call(arguments))); } catch (e) {}
