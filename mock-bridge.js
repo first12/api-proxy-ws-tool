@@ -9,6 +9,10 @@
   var STATUS_KEY = "proxySyncStatus";
   var RM = globalThis.RuleModel;
 
+  // MAIN world 引擎是否已就绪（以 mock-inject 发来的 hello 为准）
+  var mainAlive = false;
+  var fallbackTried = false;
+
   function push(rules) {
     var table = [];
     try {
@@ -17,6 +21,29 @@
       table = [];
     }
     window.postMessage({ __mockSource: SOURCE, type: "config", enabled: table.length > 0, table: table }, "*");
+  }
+
+  // 已知 Chromium 问题：registerContentScripts 注册的 world:"MAIN" 脚本可能"注册成功但不注入"。
+  // 桥接脚本运行后短暂等待引擎的 hello；没等到就通过 <script> 标签把引擎补注入 MAIN world
+  // （rules-model.js / mock-inject.js 均已在 web_accessible_resources 中）。
+  function injectMainFallback() {
+    if (fallbackTried || mainAlive) return;
+    fallbackTried = true;
+    function append(src, onload) {
+      var s = document.createElement("script");
+      s.src = src;
+      if (onload) s.onload = onload;
+      s.onerror = function () { s.remove(); };
+      (document.head || document.documentElement).appendChild(s);
+    }
+    append(chrome.runtime.getURL("rules-model.js"), function () {
+      var rm = document.querySelector('script[src$="rules-model.js"]');
+      if (rm) rm.remove();
+      append(chrome.runtime.getURL("mock-inject.js"), function () {
+        var mi = document.querySelector('script[src$="mock-inject.js"]');
+        if (mi) mi.remove();
+      });
+    });
   }
 
   function reload() {
@@ -47,9 +74,14 @@
 
   window.addEventListener("message", function (event) {
     if (event.source !== window || !event.data || event.data.__mockSource !== SOURCE) return;
-    if (event.data.type === "hello") reload();
+    if (event.data.type === "hello") {
+      mainAlive = true;
+      reload();
+    }
   });
 
   // 脚本在 document_start 运行，页面可能还没准备好监听；postMessage 由 MAIN world 的监听器异步接收
   reload();
+  // 给 MAIN world 注册注入一个短暂的确认窗口，未就绪则走 <script> 降级注入
+  setTimeout(injectMainFallback, 500);
 })();
